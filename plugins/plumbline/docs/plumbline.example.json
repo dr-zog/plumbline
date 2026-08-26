@@ -1,0 +1,6 @@
+{
+  "register": "register.md",
+  "roots": ["."],
+  "exclude": ["testdata", "examples"],
+  "minCoverage": 0
+}

@@ -1,0 +1,14 @@
+# Local build output
+/plumbline
+/dist/
+*.out
+*.test
+coverage.*
+
+# Built engine binaries — shipped via releases, never committed (ADR 001)
+/plugins/plumbline/bin/plumbline-*
+
+# Machine-specific harness / editor config
+/.mcp.json
+.claude/settings.json
+.claude/settings.local.json

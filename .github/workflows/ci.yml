@@ -1,0 +1,39 @@
+# Plumbline CI — vet + test on every push and PR, and prove the engine still
+# cross-compiles for every target platform.
+#
+# Binaries are not committed (see docs/adrs/001); the release flow publishes them
+# to the `dist` branch. This pipeline only proves the code is healthy and builds.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - run: go vet ./...
+      - run: go test ./...
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+
+  binaries:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so `git describe` can stamp the version
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - run: make binaries
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plumbline-binaries
+          path: plugins/plumbline/bin/plumbline-*
+          retention-days: 7

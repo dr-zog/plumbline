@@ -1,0 +1,9 @@
+{
+  "register": "register/",
+  "roots": ["cmd", "internal", "tools", "plugins/plumbline/skills"],
+  "exclude": [
+    "plugins/plumbline/skills/onboard/references",
+    "plugins/plumbline/skills/enforce/references",
+    "plugins/plumbline/skills/showcase/references"
+  ]
+}

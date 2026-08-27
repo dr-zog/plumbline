@@ -14,6 +14,10 @@ release — never generated from commit messages.
 
 ## [Unreleased]
 
+### Changed
+- CI: the changelog gate now requires an entry on **every** PR — the `skip-changelog`
+  label escape (which was timing-fragile) has been removed.
+
 ## [0.1.0] — 2026-08-27
 
 ### Added

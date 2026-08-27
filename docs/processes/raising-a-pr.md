@@ -13,9 +13,12 @@ Everything green on the branch:
   changelog of files. End every commit message with the `Co-Authored-By` trailer.
 - Rebased on the latest `main` so the merge is a clean fast-forward.
 
-Then write the changelog: add this change to `CHANGELOG.md` under `[Unreleased]` — a curated
-one-liner in the right group (Added / Changed / Fixed), written for a reader, not a diff.
-You're authoring the PR; you author its entry. It is not deferred to release day.
+Then write the changelog — **every PR, no exceptions.** Add this change to `CHANGELOG.md`
+under `[Unreleased]`: a curated one-liner in the right group (Added / Changed / Fixed),
+written for a reader, not a diff. There is no skip and no escape — a docs, CI, or chore
+change still earns its line (say so plainly: *"CI: …"*). You're authoring the PR; you author
+its entry, and never defer it to release day. CI enforces that a line exists, but the habit
+is yours — never lean on the gate to remember for you.
 
 ## Open the PR
 

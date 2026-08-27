@@ -1,0 +1,45 @@
+name: Bug report
+description: Something in the engine or a skill behaves incorrectly.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The best bug reports read like an agent wrote them — a minimal register plus a
+        snippet of anchored source that reproduces it, and the exact command you ran.
+        Plumbline is deterministic; a failing case pins it down faster than any prose.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did Plumbline do, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: >-
+        The smallest register + source (or a link) that shows it, and the exact command
+        you ran. A failing case beats a paragraph.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `plumbline -version` (or the commit / release you're on).
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which surface
+      options:
+        - The engine (CLI binary)
+        - A skill (Claude Code plugin)
+        - Distribution / install
+        - Not sure
+    validations:
+      required: true

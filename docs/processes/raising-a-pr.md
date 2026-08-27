@@ -13,6 +13,10 @@ Everything green on the branch:
   changelog of files. End every commit message with the `Co-Authored-By` trailer.
 - Rebased on the latest `main` so the merge is a clean fast-forward.
 
+Then write the changelog: add this change to `CHANGELOG.md` under `[Unreleased]` — a curated
+one-liner in the right group (Added / Changed / Fixed), written for a reader, not a diff.
+You're authoring the PR; you author its entry. It is not deferred to release day.
+
 ## Open the PR
 
 `gh pr create` (or the web UI). The PR body carries the **Dr Zog voice** — British

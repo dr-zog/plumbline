@@ -37,3 +37,36 @@ jobs:
           name: plumbline-binaries
           path: plugins/plumbline/bin/plumbline-*
           retention-days: 7
+
+  changelog:
+    # Every PR must add a CHANGELOG entry — presence, not prose (see
+    # docs/processes/raising-a-pr.md). Runs on every event so the required check always
+    # reports a conclusion: it early-passes when not a PR. (A *skipped* required check can
+    # deadlock merges, so we never skip it — we run and pass.)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need both base and head commits to diff
+      - name: Require a CHANGELOG entry (unless labelled skip-changelog)
+        env:
+          EVENT: ${{ github.event_name }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "not a pull request — changelog check not applicable."
+            exit 0
+          fi
+          if printf '%s' "$LABELS" | tr ',' '\n' | grep -qx 'skip-changelog'; then
+            echo "skip-changelog label present — changelog not required for this PR."
+            exit 0
+          fi
+          added=$(git diff --unified=0 "$BASE_SHA" "$HEAD_SHA" -- CHANGELOG.md | grep -cE '^\+[^+]' || true)
+          if [ "$added" -gt 0 ]; then
+            echo "CHANGELOG.md gained $added line(s) in this PR."
+          else
+            echo "::error::No CHANGELOG.md entry in this PR. Add one under [Unreleased], or apply the 'skip-changelog' label if this change needs no note."
+            exit 1
+          fi

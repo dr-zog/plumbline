@@ -1,0 +1,43 @@
+name: Feature request
+description: Propose an outcome Plumbline should support.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A good request is a **requirement, not a design** — the outcome you want and why,
+        not the implementation. The cleanest way to file one is to have your agent shape it
+        against
+        [writing-tickets.md](https://github.com/dr-zog/plumbline/blob/main/docs/processes/writing-tickets.md);
+        that's the standard here.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: The outcome
+      description: The capability you want, stated as a capability ("Gate on X", not "Add a --x flag").
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: The problem it solves / the pain today.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: How we'll know it's done
+      description: In outcome terms — ideally the shape of the register requirement it becomes.
+    validations:
+      required: false
+  - type: checkboxes
+    id: scope-check
+    attributes:
+      label: Scope
+      description: >-
+        Plumbline is a traceability tool, not a code-analysis or design-quality engine
+        (see ADR 002).
+      options:
+        - label: This is about requirement↔code traceability, not emergent code analysis.
+          required: false

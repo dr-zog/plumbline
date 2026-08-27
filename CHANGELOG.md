@@ -14,6 +14,8 @@ release — never generated from commit messages.
 
 ## [Unreleased]
 
+## [0.1.0] — 2026-08-27
+
 ### Added
 - Zero-dependency Go engine: OFT-compatible anchor scanner, OFT-native Markdown register
   parser (single file or a tree), locked C4 artifact-type ladder with structural
@@ -25,4 +27,5 @@ release — never generated from commit messages.
   windows amd64) via a POSIX launcher.
 - Engineering process docs and ADRs. Plumbline traces itself (100%).
 
-[Unreleased]: https://github.com/dr-zog/plumbline/commits/main
+[Unreleased]: https://github.com/dr-zog/plumbline/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/dr-zog/plumbline/releases/tag/v0.1.0

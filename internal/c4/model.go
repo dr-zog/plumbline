@@ -102,6 +102,10 @@ func Validate(items []register.Item) []Violation {
 	}
 
 	for _, it := range items {
+		if !register.KnownStatus(it.Status) {
+			vs = append(vs, Violation{it.ID, "unknown-status",
+				fmt.Sprintf("%q is not a known status (approved/proposed/draft/rejected)", it.Status), Error, it.File, it.Line})
+		}
 		if !Known(it.Type) {
 			vs = append(vs, Violation{it.ID, "unknown-type",
 				fmt.Sprintf("%q is not a Plumbline artifact type", it.Type), Error, it.File, it.Line})

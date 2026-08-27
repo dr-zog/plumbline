@@ -66,3 +66,27 @@ func TestDuplicateID(t *testing.T) {
 		t.Fatalf("duplicate-id violations = %d, want 1 (the redefinition)", dups)
 	}
 }
+
+func TestUnknownStatus(t *testing.T) {
+	items := []register.Item{
+		{ID: "req~a~1", Type: "req", Status: "proposed", Needs: []string{"component"}}, // valid
+		{ID: "req~b~1", Type: "req", Status: "bogus", Needs: []string{"component"}},    // unknown status
+		{ID: "req~c~1", Type: "req", Needs: []string{"component"}},                     // empty = approved default
+	}
+	vs := Validate(items)
+	statusErrs := 0
+	for _, v := range vs {
+		if v.Kind == "unknown-status" {
+			statusErrs++
+			if v.ItemID != "req~b~1" {
+				t.Errorf("unknown-status on %q, want req~b~1", v.ItemID)
+			}
+			if v.Severity != Error {
+				t.Error("unknown-status should be an error")
+			}
+		}
+	}
+	if statusErrs != 1 {
+		t.Errorf("unknown-status count = %d, want 1 (only the bogus value)", statusErrs)
+	}
+}

@@ -47,3 +47,11 @@ Plumbline ships as a self-contained Claude Code plugin across Linux, macOS and W
 a single static engine binary per target, bundled in the plugin, no toolchain to install.
 
 Needs: req
+
+### Requirement lifecycle
+`feat~requirement-lifecycle~1`
+
+Requirements carry an OFT lifecycle status — approved, proposed, draft, rejected — that
+governs whether the gate holds them and how the scorecard counts them.
+
+Needs: req

@@ -134,8 +134,11 @@ func writeText(w io.Writer, r report.Report) {
 	fmt.Fprint(w, "Plumbline traceability report\n")
 	fmt.Fprintf(w, "  register items : %d\n", s.RegisterItems)
 	fmt.Fprintf(w, "  anchors found  : %d\n", s.Anchors)
-	fmt.Fprintf(w, "  coverage       : %d/%d items (%.1f%%)   [direct needs met]\n", s.ShallowCovered, s.RegisterItems, s.CoveragePct)
-	fmt.Fprintf(w, "  completeness   : %d/%d items (%.1f%%)   [whole chain resolves]\n", s.DeepCovered, s.RegisterItems, s.CompletenessPct)
+	fmt.Fprintf(w, "  coverage       : %d/%d items (%.1f%%)   [direct needs met]\n", s.ShallowCovered, s.ApprovedItems, s.CoveragePct)
+	fmt.Fprintf(w, "  completeness   : %d/%d items (%.1f%%)   [whole chain resolves]\n", s.DeepCovered, s.ApprovedItems, s.CompletenessPct)
+	if s.PlannedItems > 0 {
+		fmt.Fprintf(w, "  planned        : %d items — proposed/draft, tracked but not gated\n", s.PlannedItems)
+	}
 	if s.MinCoverage > 0 {
 		fmt.Fprintf(w, "  gate           : threshold — fail below %.1f%%\n", s.MinCoverage)
 	} else {
@@ -185,13 +188,25 @@ func writeText(w io.Writer, r report.Report) {
 		fmt.Fprintln(w)
 	}
 
+	if len(r.Planned) > 0 {
+		fmt.Fprintf(w, "PLANNED (%d) — designed, tracked, not gated (proposed/draft):\n", len(r.Planned))
+		for _, p := range r.Planned {
+			state := "pending"
+			if p.Realised {
+				state = "realised"
+			}
+			fmt.Fprintf(w, "  [%s · %s] %s%s  (%s:%d)\n", p.Status, state, p.ID, titleOf(p.Title), p.File, p.Line)
+		}
+		fmt.Fprintln(w)
+	}
+
 	if s.OK {
 		fmt.Fprint(w, "OK — traceability holds.\n")
 	} else {
 		// Lead with progress, not just a verdict — during a large move you want to
 		// see how far along you are, not a bare red.
 		fmt.Fprintf(w, "FAIL — %d/%d items covered; still to clear: %d uncovered, %d transitive, %d broken, %d orphan, %d structural.\n",
-			s.ShallowCovered, s.RegisterItems, s.UncoveredCount, s.TransitiveCount, s.BrokenCount, s.OrphanCount, s.StructuralErrors)
+			s.ShallowCovered, s.ApprovedItems, s.UncoveredCount, s.TransitiveCount, s.BrokenCount, s.OrphanCount, s.StructuralErrors)
 	}
 }
 

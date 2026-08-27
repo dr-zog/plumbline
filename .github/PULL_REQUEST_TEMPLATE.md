@@ -19,5 +19,5 @@ diff first. Full guidance: docs/processes/raising-a-pr.md
 - [ ] `gofmt -l .` clean (no output)
 - [ ] `plumbline` self-trace green — **0 gaps** (register-first work is covered)
 - [ ] Registered the requirement first, and anchored the covering code-area(s)
-- [ ] Added a CHANGELOG entry under `[Unreleased]` (or applied the `skip-changelog` label)
+- [ ] Added a CHANGELOG entry under `[Unreleased]` (every PR — no exceptions)
 - [ ] Recorded an ADR if the decision was architectural

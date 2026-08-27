@@ -8,8 +8,9 @@ that links each *code-area* up to a documented requirement, feature, or componen
 zero-dependency Go binary proves the anchors resolve, in both directions, and fails the
 build when they don't. The skills place the anchors for you and keep the register current.
 
-This document is the implementation brief. It captures a settled design; an implementer
-should be able to start at Stage 1 without re-deriving the decisions below.
+This is the **design rationale** — the *why* behind Plumbline's shape, captured so the
+decisions don't have to be re-derived. It is not a how-to: the processes for building and
+using Plumbline live in [`docs/`](docs/).
 
 ---
 
@@ -58,7 +59,7 @@ The design is an assembly of three established disciplines, followed as-is:
 
 **Engine — a Go static binary. The law.**
 Deterministic, cheap, zero runtime dependencies (this is why Go, not a JVM/TS/Python tool
-with a dependency tree — the binary ships committed inside the plugin). It:
+with a dependency tree — the binary ships inside the plugin). It:
 - scans a tree for anchors and parses the register;
 - emits a machine-readable **bidirectional report** — *uncovered requirements* (no anchoring
   code), *broken anchors* (target doesn't resolve), *unanchored code-areas* (orphans);
@@ -96,23 +97,11 @@ one by hand. Implement against OpenFastTrace's tag specification.
 Subdir plugin, matching the marketplace's `git-subdir` source pattern:
 
 - **repo root** — Go source, build tooling, CI.
-- **`plugins/plumbline/`** — the shippable plugin: `skills/`, `bin/` (committed per-platform
+- **`plugins/plumbline/`** — the shippable plugin: `skills/`, `bin/` (the per-platform
   binaries — the zero-dependency promise), `.claude-plugin/plugin.json`, `docs/`.
 
-MIT licence. Public-facing files carry the Dr Zog persona (British English, confident,
+MIT licence. Public-facing files carry the Dr. Zog persona (British English, confident,
 mechanism-first).
-
-## Build stages
-
-1. **Walking skeleton** — one end-to-end pipe. Go module; binary v0 scans a tree for
-   OFT-compatible anchors and emits the bidirectional JSON report, exiting non-zero on any
-   gap; a minimal register file the anchors resolve into; one `audit` skill that runs the
-   binary and narrates it; `plugin.json`; README. Proven on a tiny fixture.
-2. **Widen + score + CI** — coverage %/completeness alongside the exit code; C4 structural
-   validation; a locked-default config file; CI cross-compiles and commits the binaries.
-3. **Flagship skills** — `onboard`, `maintain`, `enforce` on the now-capable engine.
-4. **Dogfood + ship** — validate against the first real codebase (below), then marketplace
-   entry, versioned release.
 
 ## Validation
 
@@ -120,14 +109,3 @@ Plumbline was validated on a real, actively-changing production codebase: a team
 ran `onboard`, and used it through a large refactor. Their field report confirmed the register
 held — no requirement silently dropped across the move — and its recommendations are captured
 in `docs/adrs/`.
-
-## Open items
-
-- **Target stack** — the tag scanner needs to handle the comment syntaxes of the first target
-  codebase. Anchor scanning is largely language-agnostic (comment markers with a grammar), so
-  this is a tuning detail, not a blocker for the early stages.
-- **Graphify** — a graph-database-of-code tool being activated separately. Slots in as the
-  *periodic drift / assurance / visualisation* pass on top of the register — an integration,
-  not a dependency, and not the source of truth.
-- **Public home** — the plugin ships from this public GitHub repo (`dr-zog`), matching the
-  marketplace's `git-subdir` source pattern.

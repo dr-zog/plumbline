@@ -15,6 +15,6 @@ Processes evolve — edit these freely; they're not ADRs. (A settled, provenance
 
 - [working-on-a-ticket.md](working-on-a-ticket.md) — the dev loop: requirement → design →
   code → test, register-first.
-- [raising-an-mr.md](raising-an-mr.md) — landing a change via a GitHub PR.
+- [raising-a-pr.md](raising-a-pr.md) — landing a change via a GitHub PR.
 - [writing-tickets.md](writing-tickets.md) — where tickets live and how much they carry.
 - [writing-adrs.md](writing-adrs.md) — when and how to record a decision.

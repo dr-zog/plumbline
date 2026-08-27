@@ -1,6 +1,23 @@
 # Plumbline
 
-**Light-touch, enforced traceability from requirements to code.**
+**AIs write code as fast as humans ask for features. The faster your agents write, the
+faster implementation drifts from intent. Plumbline holds the thread — and fails the build
+the moment it snaps.**
+
+[![CI](https://github.com/dr-zog/plumbline/actions/workflows/ci.yml/badge.svg)](https://github.com/dr-zog/plumbline/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Go 1.23](https://img.shields.io/badge/Go-1.23-00ADD8?logo=go&logoColor=white)
+![Zero dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)
+![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A63D2)
+
+Agents don't tire and they don't slow down — they generate code faster than anyone can
+read it, and somewhere in that torrent the *why* gets buried: the feature that was asked
+for, the requirement it was meant to satisfy, the thread from intent to implementation. It
+drifts out of sync while the machine keeps typing, and nobody notices until the codebase no
+longer matches what anyone actually wanted. Plumbline is the counterweight — a
+zero-dependency engine that enforces the link from every requirement to the code that
+fulfils it, in both directions, and won't let the thread break silently. Your AIs write;
+Plumbline makes sure they never lose the features amongst the code.
 
 Write your prose comments however you like — rich or sparse, Plumbline never
 measures them. Its single non-negotiable is the **anchor**: a lightweight,
@@ -10,12 +27,11 @@ anchors resolve, in both directions, across the whole chain — and fails the
 build when they don't. The skills place the anchors for you and keep the
 register current.
 
-> **Status: Stage 2 — widen + score + CI.** The engine resolves coverage across
-> the full requirement→architecture→code chain, validates C4 structure, scores
-> coverage and completeness, and gates strictly or against a threshold; CI
-> cross-compiles and commits the per-platform binaries. Still to come: the
-> `onboard`/`maintain`/`enforce` skills (Stage 3) and a real-codebase dogfood
-> (Stage 4). See [`DESIGN.md`](DESIGN.md) for the full brief.
+> **Status: usable and self-hosted.** The engine resolves coverage across the full
+> requirement→architecture→code chain, validates C4 structure, scores coverage and
+> completeness, and gates strictly or by threshold. The Claude Code plugin ships the
+> `onboard` / `maintain` / `enforce` / `audit` / `showcase` skills — and Plumbline
+> traces itself (100%). See [`DESIGN.md`](DESIGN.md) for the design rationale.
 
 ## The idea in one breath
 
@@ -165,7 +181,7 @@ threshold are (see [`plugins/plumbline/docs/plumbline.example.json`](plugins/plu
 ```console
 make vet test      # go vet + unit/end-to-end tests
 make build         # local ./plumbline (gitignored)
-make binaries      # committed per-platform binaries in plugins/plumbline/bin/
+make binaries      # per-platform binaries in plugins/plumbline/bin/ (gitignored; shipped on dist)
 ```
 
 CI (GitHub Actions) vets, tests and cross-compiles on every push and pull request.

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea
+    url: https://github.com/dr-zog/plumbline/discussions
+    about: Ask a question, share how you're using Plumbline, or float an idea before filing a ticket.
+  - name: Security report
+    url: https://github.com/dr-zog/plumbline/security/advisories/new
+    about: Report a vulnerability privately (see SECURITY.md).

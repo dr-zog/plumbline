@@ -40,7 +40,7 @@ work *starts*.
 7. **Verify** — all of:
    - `go test ./...` · `go vet ./...` · `gofmt -l .` (clean)
    - `plumbline` (self-trace green — 0 uncovered/broken/orphan/transitive/structural)
-8. **Land it** via a GitHub PR — see [raising-an-mr.md](raising-an-mr.md).
+8. **Land it** via a GitHub PR — see [raising-a-pr.md](raising-a-pr.md).
 
 ## Notes
 

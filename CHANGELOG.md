@@ -14,6 +14,15 @@ release — never generated from commit messages.
 
 ## [Unreleased]
 
+### Added
+- Honour OFT's `Status` attribute (`approved` / `proposed` / `draft` / `rejected`):
+  `approved` (the default) gates as normal; `proposed` / `draft` are tracked but not
+  gated, so a requirement can be designed up front and held knowingly uncovered;
+  `rejected` is excluded from tracing. Scores are computed over the approved set, and a
+  planned count plus a `PLANNED` report section surface the planned-vs-realised view. An
+  unknown status is a structural error, and a `Status:` line is no longer mis-parsed into
+  an item's description. (ADR 003.)
+
 ### Changed
 - CI: the changelog gate now requires an entry on **every** PR — the `skip-changelog`
   label escape (which was timing-fragile) has been removed.

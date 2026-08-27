@@ -147,3 +147,14 @@ host, with no macOS host or `lipo`.
 
 Covers: feat~cross-platform-distribution~1
 Needs: component
+
+### Honour requirement status
+`req~status-lifecycle~1`
+
+Honour OFT's `Status` attribute: `approved` (the default) gates as normal; `proposed`/`draft`
+are tracked but not gated; `rejected` is excluded from tracing. Coverage and completeness are
+computed over the gated set, with a planned count surfaced; an unknown status is a structural
+error.
+
+Covers: feat~requirement-lifecycle~1
+Needs: component

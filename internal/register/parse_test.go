@@ -64,3 +64,39 @@ func TestOffOn(t *testing.T) {
 		t.Fatalf("items = %d, want 2 (ignored region skipped)", len(items))
 	}
 }
+
+func TestStatus(t *testing.T) {
+	src := "" +
+		"`req~default~1`\n" +
+		"Some description.\n" +
+		"Needs: component\n" +
+		"\n" +
+		"`req~planned~1`\n" +
+		"Status: proposed\n" +
+		"A speculative requirement.\n" +
+		"Needs: component\n"
+	items, err := parse(strings.NewReader(src), "reg.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("items = %d, want 2", len(items))
+	}
+
+	// An absent status defaults to approved.
+	if got := items[0].StatusOrDefault(); got != "approved" {
+		t.Errorf("default status = %q, want approved", got)
+	}
+	if !items[0].Approved() {
+		t.Error("item without a status line should be Approved()")
+	}
+
+	// A Status line right under the ID must be recognised as an attribute, not
+	// swallowed into the description.
+	if items[1].Status != "proposed" || !items[1].Planned() {
+		t.Errorf("second = %+v, want status proposed / Planned()", items[1])
+	}
+	if items[1].Desc != "A speculative requirement." {
+		t.Errorf("desc = %q — a Status line must not become the description", items[1].Desc)
+	}
+}

@@ -116,3 +116,46 @@ func TestThresholdGate(t *testing.T) {
 		t.Error("broken anchor must fail even in threshold mode")
 	}
 }
+
+// TestStatusLifecycle checks the OFT status semantics: approved gates and scores,
+// proposed is tracked-not-gated, rejected is excluded, and scores are over the
+// approved set.
+func TestStatusLifecycle(t *testing.T) {
+	items := []register.Item{
+		// approved, fully covered
+		{ID: "req~done~1", Type: "req", Needs: []string{"component"}},
+		{ID: "component~done~1", Type: "component", Covers: []string{"req~done~1"}, Needs: []string{"impl"}},
+		// proposed, uncovered — tracked, must NOT fail the gate
+		{ID: "req~planned~1", Type: "req", Status: "proposed", Needs: []string{"component"}},
+		// rejected, uncovered — excluded from tracing entirely
+		{ID: "req~dropped~1", Type: "req", Status: "rejected", Needs: []string{"component"}},
+	}
+	anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~done~1"}}
+	r := Build(items, anchors, []string{"a.go"}, 0)
+
+	if !r.Summary.OK {
+		t.Fatalf("expected OK — proposed uncovered must not fail, rejected excluded; got %+v", r.Summary)
+	}
+	if r.Summary.RegisterItems != 3 {
+		t.Errorf("registerItems = %d, want 3 (rejected excluded)", r.Summary.RegisterItems)
+	}
+	if r.Summary.RejectedItems != 1 {
+		t.Errorf("rejectedItems = %d, want 1", r.Summary.RejectedItems)
+	}
+	if r.Summary.PlannedItems != 1 {
+		t.Errorf("plannedItems = %d, want 1", r.Summary.PlannedItems)
+	}
+	if r.Summary.ApprovedItems != 2 {
+		t.Errorf("approvedItems = %d, want 2", r.Summary.ApprovedItems)
+	}
+	// Scores are over the approved set (both covered) — planned/rejected don't dilute.
+	if r.Summary.CoveragePct != 100.0 || r.Summary.CompletenessPct != 100.0 {
+		t.Errorf("scores = %.1f/%.1f, want 100.0/100.0 over approved", r.Summary.CoveragePct, r.Summary.CompletenessPct)
+	}
+	if r.Summary.UncoveredCount != 0 {
+		t.Errorf("uncovered = %d, want 0 (a proposed item is not a gap)", r.Summary.UncoveredCount)
+	}
+	if len(r.Planned) != 1 || r.Planned[0].ID != "req~planned~1" || r.Planned[0].Realised {
+		t.Errorf("planned = %+v, want [req~planned~1, realised=false]", r.Planned)
+	}
+}

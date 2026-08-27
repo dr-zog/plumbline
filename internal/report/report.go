@@ -5,6 +5,10 @@
 // that Covers the item. Deep coverage additionally requires every covering
 // register item to be deeply covered itself — surfacing transitive defects.
 //
+// Item status governs tracing: rejected items are excluded entirely; approved
+// items (the default) are gated and scored; proposed/draft items are tracked and
+// surfaced as planned, but never fail the gate.
+//
 // The one report yields both a gate (OK / exit code) and a scorecard (coverage
 // and completeness percentages, gap counts) the skills narrate.
 //
@@ -29,16 +33,20 @@ type Report struct {
 	Broken     []Broken        `json:"broken"`
 	Orphans    []Orphan        `json:"orphans"`
 	Structural []c4.Violation  `json:"structural"`
+	Planned    []Planned       `json:"planned"`
 }
 
 // Summary holds the headline counts, the two scores, and the pass/fail gate.
 type Summary struct {
-	RegisterItems    int     `json:"registerItems"`
+	RegisterItems    int     `json:"registerItems"` // traced items (approved + planned; rejected excluded)
+	ApprovedItems    int     `json:"approvedItems"` // gated, and the basis for the scores
+	PlannedItems     int     `json:"plannedItems"`  // proposed/draft — tracked, not gated
+	RejectedItems    int     `json:"rejectedItems"` // excluded from tracing
 	Anchors          int     `json:"anchors"`
 	ShallowCovered   int     `json:"shallowCovered"`
 	DeepCovered      int     `json:"deepCovered"`
-	CoveragePct      float64 `json:"coveragePct"`     // shallow: direct Needs met
-	CompletenessPct  float64 `json:"completenessPct"` // deep: whole chain resolves
+	CoveragePct      float64 `json:"coveragePct"`     // shallow: direct Needs met, over approved
+	CompletenessPct  float64 `json:"completenessPct"` // deep: whole chain resolves, over approved
 	UncoveredCount   int     `json:"uncoveredCount"`
 	TransitiveCount  int     `json:"transitiveDefectCount"`
 	BrokenCount      int     `json:"brokenCount"`
@@ -83,13 +91,37 @@ type Orphan struct {
 	Area string `json:"area"`
 }
 
+// Planned is a proposed or draft item: tracked and surfaced for the planned-vs-
+// realised view, but never gated. Realised is true when its chain already
+// resolves to code.
+type Planned struct {
+	ID       string `json:"id"`
+	Title    string `json:"title,omitempty"`
+	Status   string `json:"status"`
+	Realised bool   `json:"realised"`
+	File     string `json:"file"`
+	Line     int    `json:"line"`
+}
+
 // Build cross-checks anchors against register items and scanned source files.
 // minCoverage of 0 selects strict gating (any gap fails); a positive value
 // selects threshold gating (fail below that shallow-coverage percentage, but
 // broken anchors and structural errors always fail).
 func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string, minCoverage float64) Report {
-	byID := make(map[string]register.Item, len(items))
+	// Status governs tracing: rejected items are excluded entirely (OFT); the rest
+	// are traced, but only approved items are gated and scored.
+	var traced []register.Item
+	rejected := 0
 	for _, it := range items {
+		if it.Rejected() {
+			rejected++
+			continue
+		}
+		traced = append(traced, it)
+	}
+
+	byID := make(map[string]register.Item, len(traced))
+	for _, it := range traced {
 		byID[it.ID] = it
 	}
 
@@ -109,7 +141,7 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 
 	// coverers[X] = register items that declare `Covers: X`.
 	coverers := make(map[string][]register.Item)
-	for _, it := range items {
+	for _, it := range traced {
 		for _, tgt := range it.Covers {
 			coverers[tgt] = append(coverers[tgt], it)
 		}
@@ -155,9 +187,10 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 
 	var uncovered []Uncovered
 	var transitive []TransitiveGap
-	shallowCount, deepCount := 0, 0
+	var planned []Planned
+	shallowCount, deepCount, approvedCount := 0, 0, 0
 
-	for _, it := range items {
+	for _, it := range traced {
 		var missing []string
 		for _, need := range it.Needs {
 			if !needMetShallow(it.ID, need) {
@@ -166,13 +199,25 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 		}
 		isShallow := len(missing) == 0
 		isDeep := isShallow && deep(it)
+
+		// Proposed/draft: tracked and surfaced for the burndown, but never a gap
+		// and never scored — you designed it, you haven't promised it yet.
+		if it.Planned() {
+			planned = append(planned, Planned{
+				ID: it.ID, Title: it.Title, Status: it.StatusOrDefault(),
+				Realised: isDeep, File: it.File, Line: it.Line,
+			})
+			continue
+		}
+
+		// Approved: gated as normal, and the basis for the scores.
+		approvedCount++
 		if isShallow {
 			shallowCount++
 		}
 		if isDeep {
 			deepCount++
 		}
-
 		switch {
 		case !isShallow:
 			uncovered = append(uncovered, Uncovered{
@@ -214,6 +259,7 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 
 	sort.Slice(uncovered, func(i, j int) bool { return uncovered[i].ID < uncovered[j].ID })
 	sort.Slice(transitive, func(i, j int) bool { return transitive[i].ID < transitive[j].ID })
+	sort.Slice(planned, func(i, j int) bool { return planned[i].ID < planned[j].ID })
 	sort.Slice(broken, func(i, j int) bool {
 		if broken[i].File != broken[j].File {
 			return broken[i].File < broken[j].File
@@ -228,13 +274,17 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 		Broken:     broken,
 		Orphans:    orphans,
 		Structural: structural,
+		Planned:    planned,
 		Summary: Summary{
-			RegisterItems:    len(items),
+			RegisterItems:    len(traced),
+			ApprovedItems:    approvedCount,
+			PlannedItems:     len(planned),
+			RejectedItems:    rejected,
 			Anchors:          len(anchors),
 			ShallowCovered:   shallowCount,
 			DeepCovered:      deepCount,
-			CoveragePct:      pct(shallowCount, len(items)),
-			CompletenessPct:  pct(deepCount, len(items)),
+			CoveragePct:      pct(shallowCount, approvedCount),
+			CompletenessPct:  pct(deepCount, approvedCount),
 			UncoveredCount:   len(uncovered),
 			TransitiveCount:  len(transitive),
 			BrokenCount:      len(broken),
@@ -276,6 +326,7 @@ func weakCoverers(it register.Item, coverers map[string][]register.Item, deep fu
 
 // gate decides the pass/fail. Broken anchors and structural errors always fail.
 // Otherwise: threshold mode fails below minCoverage; strict mode fails on any gap.
+// Only approved items reach the gap lists, so proposed/draft items never fail it.
 func gate(s Summary, minCoverage float64) bool {
 	if s.BrokenCount > 0 || s.StructuralErrors > 0 {
 		return false

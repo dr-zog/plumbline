@@ -28,6 +28,10 @@ Examples that earned an ADR: the plugin packaging & distribution shape
   re-check the reasoning, not just the conclusion. Record the alternatives you *rejected*
   and why; that's usually the most valuable part.
 - Keep it terse and self-contained. A reader in a year should need nothing else.
+- **No ticket needed; reference, don't close.** An ADR is a *decision record*, not a
+  requirement, so it doesn't get a ticket of its own — write it on its own branch. Its PR
+  *references* the tickets it governs (a plain `#12` mention) but does **not** `Close` them;
+  those close when their implementing code lands.
 
 ## Lifecycle
 

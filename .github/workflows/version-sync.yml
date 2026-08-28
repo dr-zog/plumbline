@@ -1,0 +1,34 @@
+# Version-drift guard — `plugin.json`'s version must equal the latest release tag.
+#
+# The release version is bot-maintained (ADR 005): semantic-release writes
+# `plugin.json`, the tag, and the changelog together from one computed number, so
+# they can never disagree on their own. This check closes the *human* hole — a PR
+# that hand-edits `plugin.json` out of band fails here and can't merge. Combined
+# with the `v*` tag ruleset (only the release App mints tags), version drift is
+# impossible to land, not merely unlikely.
+name: version-sync
+
+on:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: plugin.json version matches the latest tag
+        run: |
+          manifest=$(jq -r .version plugins/plumbline/.claude-plugin/plugin.json)
+          tag=$(git tag --list 'v*' --sort=-v:refname | head -1 | sed 's/^v//')
+          echo "plugin.json=$manifest  latest-tag=v$tag"
+          if [ -z "$tag" ]; then
+            echo "::error::No v* tag found to compare against."
+            exit 1
+          fi
+          if [ "$manifest" != "$tag" ]; then
+            echo "::error::plugin.json version ($manifest) != latest release ($tag). The version is bot-maintained (ADR 005) — don't hand-edit it."
+            exit 1
+          fi

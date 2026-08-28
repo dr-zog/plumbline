@@ -1,0 +1,23 @@
+# PR-title lint — the PR title must be a Conventional Commit.
+#
+# We squash-merge, so the PR title becomes the commit subject on `main`, which is
+# what semantic-release reads to compute the next version and the changelog (ADR
+# 005). A malformed title would silently misclassify (or drop) a release, so this
+# is a required check.
+name: pr-title
+
+on:
+  pull_request:
+    # `edited` so re-titling a PR re-runs the check without a new push.
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -24,7 +24,8 @@ release — never generated from commit messages.
   an item's description. (ADR 003.)
 - Dead-end detection: an approved register item that declares no `Needs` now **fails** the
   gate as a dead-end, instead of reading as vacuous 100% coverage. Proposed/draft items with
-  no `Needs` are unaffected. (Closes #1; ADR 004.)
+  no `Needs` are unaffected; the `audit` and `maintain` skills are updated to match.
+  (Closes #1; ADR 004.)
 
 ### Changed
 - CI: the changelog gate now requires an entry on **every** PR — the `skip-changelog`

@@ -33,6 +33,40 @@ register current.
 > `onboard` / `maintain` / `enforce` / `audit` / `showcase` skills — and Plumbline
 > traces itself (100%). See [`DESIGN.md`](DESIGN.md) for the design rationale.
 
+## Install
+
+### As a Claude Code plugin
+
+Plumbline ships from the repo's **`dist`** branch, which carries the plugin and its
+per-platform binaries (`main` stays source-only). Nothing else to install — no Go
+toolchain, no runtime dependencies:
+
+```
+/plugin marketplace add https://github.com/dr-zog/plumbline.git#dist
+/plugin install plumbline@plumbline
+```
+
+The `onboard` / `maintain` / `enforce` / `audit` / `showcase` skills become available,
+and the engine runs via the launcher, `${CLAUDE_PLUGIN_ROOT}/bin/plumbline`.
+
+### In CI (no plugin, no Go toolchain)
+
+The engine is a single zero-dependency binary, so any repo's CI can run the gate
+directly. Pin a verified build from a
+[release](https://github.com/dr-zog/plumbline/releases):
+
+```bash
+base="https://github.com/dr-zog/plumbline/releases/download/v0.2.1"
+curl -sSLO "$base/plumbline-linux-amd64"
+curl -sSLO "$base/SHA256SUMS"
+sha256sum --ignore-missing -c SHA256SUMS          # verify integrity
+chmod +x plumbline-linux-amd64
+./plumbline-linux-amd64 -register register.md .   # exits non-zero on any gap
+```
+
+Full guide — a GitHub Actions example, the floating-latest and build-from-source
+options — in [**docs/ci.md**](docs/ci.md).
+
 ## The idea in one breath
 
 Codebases built feature-first lose the thread between the outcome someone wanted
@@ -185,7 +219,11 @@ make binaries      # per-platform binaries in plugins/plumbline/bin/ (gitignored
 ```
 
 CI (GitHub Actions) vets, tests and cross-compiles on every push and pull request.
-Release binaries ship on the `dist` branch, never committed to `main`
-(see [ADR 001](docs/adrs/001-plugin-packaging-and-distribution.md)).
+**Releases are automated**: merging a `fix` / `feat` / breaking change to `main` cuts a
+release via semantic-release — binaries ship on the `dist` branch (for the plugin) and as
+GitHub Release assets with checksums (for pinned CI use), never committed to `main`
+(ADRs [001](docs/adrs/001-plugin-packaging-and-distribution.md) /
+[005](docs/adrs/005-automated-releases-semantic-release.md) /
+[006](docs/adrs/006-release-binaries-for-ci.md)).
 
 MIT licensed.

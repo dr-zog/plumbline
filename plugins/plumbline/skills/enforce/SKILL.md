@@ -66,10 +66,11 @@ Detect the CI system from the repo and add a gate job from `references/ci-snippe
   fail on non-zero" recipe.
 
 The one real wrinkle is **getting the binary into CI**: the engine ships inside the
-plugin, not the project, so the CI job must obtain it — vendor the committed binary
-into the repo, download it from a release, or `go build` it from source. The snippets
-show each; pick the one that matches how the team distributes tools, and say plainly
-which you chose.
+plugin, not the project, so the CI job must obtain it. Prefer a **pinned release binary**
+— download it from a tagged release and verify it against the release's `SHA256SUMS`
+(reproducible and tamper-checked); the snippets lead with this. Vendoring a committed
+binary or building from source are alternatives when the team prefers them. Whichever you
+pick, pin a version and say plainly which you chose.
 
 ## Threshold, if they want a softer gate
 

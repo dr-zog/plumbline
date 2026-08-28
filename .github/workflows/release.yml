@@ -1,0 +1,77 @@
+# Automated releases (ADR 005) — release-on-merge via semantic-release.
+#
+# semantic-release reads the Conventional Commits since the last release, computes the
+# semver bump, updates CHANGELOG.md + plugin.json and commits them back to `main`
+# ([skip ci]), tags, cuts a notes-only GitHub Release, and runs `make dist` to publish
+# the binaries to the orphan `dist` branch. Auth is a dedicated GitHub App (a bot
+# identity, no personal token) that bypasses the `main` and `v*` rulesets.
+#
+# Step 4 ships this on `workflow_dispatch` only (default: dry-run) so we can validate
+# the App auth + version computation before any real release can fire. A follow-up adds
+# the `push: [main]` trigger that makes releases actually land on merge.
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run — analyse and report only, no tag/commit/release."
+        type: boolean
+        default: true
+
+# Least privilege for the default token; every write is done by the App token below.
+permissions:
+  contents: read
+
+# Never let two releases run at once.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint a GitHub App token (bot identity, ruleset bypass)
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Resolve the bot's user id (for commit authorship)
+        id: bot
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: echo "uid=$(gh api "/users/${SLUG}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Configure git as the bot
+        env:
+          SLUG: ${{ steps.app-token.outputs.app-slug }}
+          UID: ${{ steps.bot.outputs.uid }}
+        run: |
+          git config user.name  "${SLUG}[bot]"
+          git config user.email "${UID}+${SLUG}[bot]@users.noreply.github.com"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install semantic-release
+        run: npm install --no-save semantic-release@24 @semantic-release/changelog@6 @semantic-release/exec@6 @semantic-release/git@10
+
+      - name: semantic-release
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: npx semantic-release ${{ inputs.dry_run && '--dry-run' || '' }}

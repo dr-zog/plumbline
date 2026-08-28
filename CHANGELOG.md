@@ -22,6 +22,9 @@ release — never generated from commit messages.
   planned count plus a `PLANNED` report section surface the planned-vs-realised view. An
   unknown status is a structural error, and a `Status:` line is no longer mis-parsed into
   an item's description. (ADR 003.)
+- Dead-end detection: an approved register item that declares no `Needs` now **fails** the
+  gate as a dead-end, instead of reading as vacuous 100% coverage. Proposed/draft items with
+  no `Needs` are unaffected. (Closes #1; ADR 004.)
 
 ### Changed
 - CI: the changelog gate now requires an entry on **every** PR — the `skip-changelog`

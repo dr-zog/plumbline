@@ -158,3 +158,12 @@ error.
 
 Covers: feat~requirement-lifecycle~1
 Needs: component
+
+### Detect dead-end requirements
+`req~dead-end-detection~1`
+
+Flag an approved item that declares no `Needs` — a dead-end in the locked ladder, which can
+never be genuinely covered. It fails the gate rather than reading as vacuously complete.
+
+Covers: feat~bidirectional-audit~1
+Needs: component

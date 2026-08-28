@@ -159,3 +159,35 @@ func TestStatusLifecycle(t *testing.T) {
 		t.Errorf("planned = %+v, want [req~planned~1, realised=false]", r.Planned)
 	}
 }
+
+// TestDeadEnd checks that an approved item declaring no Needs is a dead-end (a
+// hard fail), not a vacuous 100% — while a proposed item with no Needs is not.
+func TestDeadEnd(t *testing.T) {
+	items := []register.Item{
+		{ID: "req~naked~1", Type: "req"},                            // approved (default), no Needs → dead-end
+		{ID: "req~ok~1", Type: "req", Needs: []string{"component"}}, // approved, needs a component
+		{ID: "component~ok~1", Type: "component", Covers: []string{"req~ok~1"}, Needs: []string{"impl"}},
+		{ID: "req~future~1", Type: "req", Status: "proposed"}, // proposed, no Needs → NOT a dead-end
+	}
+	anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~ok~1"}}
+	r := Build(items, anchors, []string{"a.go"}, 0)
+
+	if r.Summary.OK {
+		t.Fatal("expected FAIL — an approved item with no Needs is a dead-end")
+	}
+	if r.Summary.DeadEndCount != 1 {
+		t.Errorf("deadEndCount = %d, want 1", r.Summary.DeadEndCount)
+	}
+	if len(r.DeadEnds) != 1 || r.DeadEnds[0].ID != "req~naked~1" {
+		t.Errorf("deadEnds = %+v, want [req~naked~1]", r.DeadEnds)
+	}
+	// The dead-end must NOT count as covered — no vacuous inflation. Of 3 approved
+	// items (naked, ok, component~ok), only the two real ones are shallow-covered.
+	if r.Summary.ApprovedItems != 3 || r.Summary.ShallowCovered != 2 {
+		t.Errorf("approved=%d shallow=%d, want 3 and 2 (dead-end excluded from covered)", r.Summary.ApprovedItems, r.Summary.ShallowCovered)
+	}
+	// A proposed item with no Needs is planned, never a dead-end.
+	if r.Summary.PlannedItems != 1 {
+		t.Errorf("plannedItems = %d, want 1 (the proposed item)", r.Summary.PlannedItems)
+	}
+}

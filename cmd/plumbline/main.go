@@ -187,6 +187,14 @@ func writeText(w io.Writer, r report.Report) {
 		}
 		fmt.Fprintln(w)
 	}
+	if len(r.DeadEnds) > 0 {
+		fmt.Fprintf(w, "DEAD-END items (%d) — approved, but declare no Needs (link to nothing):\n", len(r.DeadEnds))
+		fmt.Fprint(w, "  → fix: give each a Needs edge down the ladder, or drop it below approved if it isn't a committed requirement.\n")
+		for _, d := range r.DeadEnds {
+			fmt.Fprintf(w, "  %s%s  (%s:%d)\n", d.ID, titleOf(d.Title), d.File, d.Line)
+		}
+		fmt.Fprintln(w)
+	}
 
 	if len(r.Planned) > 0 {
 		fmt.Fprintf(w, "PLANNED (%d) — designed, tracked, not gated (proposed/draft):\n", len(r.Planned))
@@ -205,8 +213,8 @@ func writeText(w io.Writer, r report.Report) {
 	} else {
 		// Lead with progress, not just a verdict — during a large move you want to
 		// see how far along you are, not a bare red.
-		fmt.Fprintf(w, "FAIL — %d/%d items covered; still to clear: %d uncovered, %d transitive, %d broken, %d orphan, %d structural.\n",
-			s.ShallowCovered, s.ApprovedItems, s.UncoveredCount, s.TransitiveCount, s.BrokenCount, s.OrphanCount, s.StructuralErrors)
+		fmt.Fprintf(w, "FAIL — %d/%d items covered; still to clear: %d uncovered, %d dead-end, %d transitive, %d broken, %d orphan, %d structural.\n",
+			s.ShallowCovered, s.ApprovedItems, s.UncoveredCount, s.DeadEndCount, s.TransitiveCount, s.BrokenCount, s.OrphanCount, s.StructuralErrors)
 	}
 }
 

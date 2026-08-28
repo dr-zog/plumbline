@@ -33,6 +33,7 @@ type Report struct {
 	Broken     []Broken        `json:"broken"`
 	Orphans    []Orphan        `json:"orphans"`
 	Structural []c4.Violation  `json:"structural"`
+	DeadEnds   []DeadEnd       `json:"deadEnds"`
 	Planned    []Planned       `json:"planned"`
 }
 
@@ -52,6 +53,7 @@ type Summary struct {
 	BrokenCount      int     `json:"brokenCount"`
 	OrphanCount      int     `json:"orphanCount"`
 	StructuralErrors int     `json:"structuralErrorCount"`
+	DeadEndCount     int     `json:"deadEndCount"`
 	MinCoverage      float64 `json:"minCoverage"` // gate threshold (0 = strict)
 	OK               bool    `json:"ok"`
 }
@@ -91,6 +93,18 @@ type Orphan struct {
 	Area string `json:"area"`
 }
 
+// DeadEnd is an approved item that declares no Needs. In the locked ladder every
+// register-item type must need something below it, so an empty Needs terminates
+// the chain prematurely — it can never be genuinely covered, and would otherwise
+// read as vacuously complete and inflate the score. Only approved items qualify;
+// a proposed/draft item without Needs is legitimately not-yet-armed.
+type DeadEnd struct {
+	ID    string `json:"id"`
+	Title string `json:"title,omitempty"`
+	File  string `json:"file"`
+	Line  int    `json:"line"`
+}
+
 // Planned is a proposed or draft item: tracked and surfaced for the planned-vs-
 // realised view, but never gated. Realised is true when its chain already
 // resolves to code.
@@ -106,7 +120,7 @@ type Planned struct {
 // Build cross-checks anchors against register items and scanned source files.
 // minCoverage of 0 selects strict gating (any gap fails); a positive value
 // selects threshold gating (fail below that shallow-coverage percentage, but
-// broken anchors and structural errors always fail).
+// broken anchors, structural errors and dead-ends always fail).
 func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string, minCoverage float64) Report {
 	// Status governs tracing: rejected items are excluded entirely (OFT); the rest
 	// are traced, but only approved items are gated and scored.
@@ -187,6 +201,7 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 
 	var uncovered []Uncovered
 	var transitive []TransitiveGap
+	var deadEnds []DeadEnd
 	var planned []Planned
 	shallowCount, deepCount, approvedCount := 0, 0, 0
 
@@ -212,6 +227,12 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 
 		// Approved: gated as normal, and the basis for the scores.
 		approvedCount++
+		if len(it.Needs) == 0 {
+			// A dead-end: an approved item that declares no downward need. It can
+			// never be genuinely covered, so it's a gap — not a vacuous 100%.
+			deadEnds = append(deadEnds, DeadEnd{ID: it.ID, Title: it.Title, File: it.File, Line: it.Line})
+			continue
+		}
 		if isShallow {
 			shallowCount++
 		}
@@ -259,6 +280,7 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 
 	sort.Slice(uncovered, func(i, j int) bool { return uncovered[i].ID < uncovered[j].ID })
 	sort.Slice(transitive, func(i, j int) bool { return transitive[i].ID < transitive[j].ID })
+	sort.Slice(deadEnds, func(i, j int) bool { return deadEnds[i].ID < deadEnds[j].ID })
 	sort.Slice(planned, func(i, j int) bool { return planned[i].ID < planned[j].ID })
 	sort.Slice(broken, func(i, j int) bool {
 		if broken[i].File != broken[j].File {
@@ -274,6 +296,7 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 		Broken:     broken,
 		Orphans:    orphans,
 		Structural: structural,
+		DeadEnds:   deadEnds,
 		Planned:    planned,
 		Summary: Summary{
 			RegisterItems:    len(traced),
@@ -290,6 +313,7 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 			BrokenCount:      len(broken),
 			OrphanCount:      len(orphans),
 			StructuralErrors: structuralErrors,
+			DeadEndCount:     len(deadEnds),
 			MinCoverage:      minCoverage,
 		},
 	}
@@ -324,11 +348,12 @@ func weakCoverers(it register.Item, coverers map[string][]register.Item, deep fu
 	return out
 }
 
-// gate decides the pass/fail. Broken anchors and structural errors always fail.
-// Otherwise: threshold mode fails below minCoverage; strict mode fails on any gap.
-// Only approved items reach the gap lists, so proposed/draft items never fail it.
+// gate decides the pass/fail. Broken anchors, structural errors and dead-ends
+// always fail. Otherwise: threshold mode fails below minCoverage; strict mode
+// fails on any gap. Only approved items reach the gap lists, so proposed/draft
+// items never fail it.
 func gate(s Summary, minCoverage float64) bool {
-	if s.BrokenCount > 0 || s.StructuralErrors > 0 {
+	if s.BrokenCount > 0 || s.StructuralErrors > 0 || s.DeadEndCount > 0 {
 		return false
 	}
 	if minCoverage > 0 {

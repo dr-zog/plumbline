@@ -35,7 +35,7 @@ Needs: impl, utest
 Cross-checks anchors against the register, resolves deep coverage, and builds the
 bidirectional report and scorecard (`internal/report`).
 
-Covers: container~engine~1, req~broken-anchor-detection~1, req~uncovered-detection~1, req~orphan-detection~1, req~deep-coverage~1, req~coverage-scoring~1, req~threshold-gating~1, req~status-lifecycle~1
+Covers: container~engine~1, req~broken-anchor-detection~1, req~uncovered-detection~1, req~orphan-detection~1, req~deep-coverage~1, req~coverage-scoring~1, req~threshold-gating~1, req~status-lifecycle~1, req~dead-end-detection~1
 Needs: impl, utest
 
 ### Config loader

@@ -17,7 +17,6 @@ They live in [`docs/processes/`](docs/processes/) and are the single source of t
 
 ## Ground rules
 
-- **PR titles are [Conventional Commits](https://www.conventionalcommits.org/).** We squash-merge, the build lints the title, and each release — version *and* changelog — is computed from it; a `fix` / `feat` / breaking change ships on merge ([ADR 005](docs/adrs/005-automated-releases-semantic-release.md)).
 - **Be excellent to each other.** Conduct is covered by the [Code of Conduct](CODE_OF_CONDUCT.md) — the short version: the machines are held to a standard; the humans are asked only to be civil.
 - By contributing, you agree your work ships under the repo's [MIT licence](LICENSE).
 

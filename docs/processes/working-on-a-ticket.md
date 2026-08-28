@@ -47,10 +47,8 @@ work *starts*.
    capabilities, and either update it in lockstep or ticket the update. A skill that
    misdescribes what the platform does misleads the AIs that consume it — the same
    requirement↔reality rot Plumbline exists to prevent, one level up.
-9. **Land it** via a GitHub PR — see [raising-a-pr.md](raising-a-pr.md). The PR title is a
-   **Conventional Commit** (`type(scope): summary`); we squash-merge, so it becomes the commit
-   semantic-release reads, and a `fix` / `feat` / breaking change **releases on merge**
-   ([ADR 005](../adrs/005-automated-releases-semantic-release.md)).
+9. **Land it** via a GitHub PR — see [raising-a-pr.md](raising-a-pr.md) for the
+   Conventional-Commit PR title (it drives the version + changelog) and release-on-merge.
 
 ## Notes
 

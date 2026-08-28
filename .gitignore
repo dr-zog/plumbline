@@ -12,3 +12,7 @@ coverage.*
 /.mcp.json
 .claude/settings.json
 .claude/settings.local.json
+
+# semantic-release tooling — installed on the fly in CI (ADR 005), never committed
+/node_modules/
+/package-lock.json

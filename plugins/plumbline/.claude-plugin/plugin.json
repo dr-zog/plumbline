@@ -1,6 +1,6 @@
 {
   "name": "plumbline",
-  "version": "0.5.0",
+  "version": "0.2.0",
   "description": "Light-touch, enforced traceability from requirements to code. Anchors link each code-area up to a documented requirement, feature or C4 component; a zero-dependency Go binary proves they resolve both ways and fails the build when they don't.",
   "author": {
     "name": "Dr Zog"

@@ -26,6 +26,8 @@ release — never generated from commit messages.
 ### Changed
 - CI: the changelog gate now requires an entry on **every** PR — the `skip-changelog`
   label escape (which was timing-fragile) has been removed.
+- Docs: ADR 004 records the requirement status-lifecycle model (supersedes ADR 003's
+  `absent = approved` sub-decision); `writing-adrs.md` now notes that ADRs need no ticket.
 
 ## [0.1.0] — 2026-08-27
 

@@ -42,3 +42,4 @@ Sources and evidence behind the decision, so it can be re-checked.
 - [001 — Plugin packaging & distribution](001-plugin-packaging-and-distribution.md)
 - [002 — Traceability only; emergent-structure analysis out of scope](002-traceability-only-emergent-analysis-out-of-scope.md)
 - [003 — OpenFastTrace conformance boundary](003-oft-conformance-boundary.md)
+- [004 — Requirement status lifecycle](004-requirement-status-lifecycle.md)

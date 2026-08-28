@@ -14,7 +14,7 @@
       "@semantic-release/exec",
       {
         "prepareCmd": "sed -i 's/\"version\": \"[^\"]*\"/\"version\": \"${nextRelease.version}\"/' plugins/plumbline/.claude-plugin/plugin.json",
-        "publishCmd": "make dist VERSION=v${nextRelease.version}"
+        "publishCmd": "make dist VERSION=v${nextRelease.version} && make checksums"
       }
     ],
     [
@@ -27,7 +27,13 @@
     [
       "@semantic-release/github",
       {
-        "assets": [],
+        "assets": [
+          { "path": "plugins/plumbline/bin/plumbline-linux-amd64" },
+          { "path": "plugins/plumbline/bin/plumbline-linux-arm64" },
+          { "path": "plugins/plumbline/bin/plumbline-darwin-universal" },
+          { "path": "plugins/plumbline/bin/plumbline-windows-amd64.exe" },
+          { "path": "plugins/plumbline/bin/SHA256SUMS" }
+        ],
         "successComment": false,
         "failComment": false
       }

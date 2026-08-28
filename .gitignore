@@ -5,8 +5,9 @@
 *.test
 coverage.*
 
-# Built engine binaries — shipped via releases, never committed (ADR 001)
+# Built engine binaries + checksums — shipped via releases, never committed (ADR 001/006)
 /plugins/plumbline/bin/plumbline-*
+/plugins/plumbline/bin/SHA256SUMS
 
 # Machine-specific harness / editor config
 /.mcp.json

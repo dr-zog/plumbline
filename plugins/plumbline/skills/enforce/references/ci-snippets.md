@@ -7,31 +7,24 @@ non-zero on any gap, so no extra assertion logic is needed — a failing pipelin
 ## Getting the binary into CI
 
 The engine ships inside the plugin, not the project, so a CI job must obtain it.
-Pick the line that matches how the team distributes tools:
+Prefer a **pinned release binary**: every
+[release](https://github.com/dr-zog/plumbline/releases) attaches the four platform
+binaries and a `SHA256SUMS`, so CI fetches an exact, verifiable build.
 
-- **Vendored** — the team commits `plumbline-linux-amd64` into the repo (e.g. under
-  `tools/`). Simplest and hermetic; just call it.
-- **Released** — download a pinned release binary with `curl` and `chmod +x`.
-- **From source** — `go build` (or `go run`) the engine if the module is available
-  to CI (a submodule, a `go install`, or a vendored source tree).
-
-The snippets below default to the vendored path with a source-build fallback; delete
-whichever you don't use.
-
-## GitLab CI (`.gitlab-ci.yml`)
-
-```yaml
-plumbline:
-  stage: test
-  image: golang:1.23        # only needed for the go-build fallback; use any base if vendored
-  script:
-    - |
-      if [ -x tools/plumbline-linux-amd64 ]; then
-        tools/plumbline-linux-amd64
-      else
-        go build -o /tmp/plumbline ./cmd/plumbline && /tmp/plumbline
-      fi
+```sh
+V=v0.2.1        # pin to a specific release tag — not a moving target
+base="https://github.com/dr-zog/plumbline/releases/download/$V"
+curl -sSLO "$base/plumbline-linux-amd64"
+curl -sSLO "$base/SHA256SUMS"
+sha256sum --ignore-missing -c SHA256SUMS
+chmod +x plumbline-linux-amd64
 ```
+
+Pinning to a tag means a new Plumbline release can't silently change the gate. Other
+platforms: `plumbline-linux-arm64`, `plumbline-darwin-universal`,
+`plumbline-windows-amd64.exe`. Alternatives: **vendored** (commit a pinned binary under
+`tools/` and call it — hermetic, no download) or **from source**
+(`go install github.com/dr-zog/plumbline/cmd/plumbline@$V`, if the team has Go in CI).
 
 ## GitHub Actions (`.github/workflows/plumbline.yml`)
 
@@ -41,26 +34,35 @@ on: [push, pull_request]
 jobs:
   traceability:
     runs-on: ubuntu-latest
+    env:
+      V: v0.2.1
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5   # only needed for the go-build fallback
-        with:
-          go-version: '1.23'
-      - name: Traceability gate
+      - name: Fetch the engine
         run: |
-          if [ -x tools/plumbline-linux-amd64 ]; then
-            tools/plumbline-linux-amd64
-          else
-            go build -o /tmp/plumbline ./cmd/plumbline && /tmp/plumbline
-          fi
+          base="https://github.com/dr-zog/plumbline/releases/download/$V"
+          curl -sSLO "$base/plumbline-linux-amd64"
+          curl -sSLO "$base/SHA256SUMS"
+          sha256sum --ignore-missing -c SHA256SUMS
+          chmod +x plumbline-linux-amd64
+      - name: Traceability gate
+        run: ./plumbline-linux-amd64 -register register.md .
 ```
 
-## Generic (any CI)
+## GitLab CI (`.gitlab-ci.yml`)
 
-Run the binary from the repo root; fail the step on non-zero exit:
-
-```sh
-plumbline            # or ./tools/plumbline-<os>-<arch>
+```yaml
+plumbline:
+  stage: test
+  image: alpine:latest        # any base with curl + coreutils
+  variables:
+    V: v0.2.1
+  script:
+    - base="https://github.com/dr-zog/plumbline/releases/download/$V"
+    - wget -q "$base/plumbline-linux-amd64" "$base/SHA256SUMS"
+    - sha256sum --ignore-missing -c SHA256SUMS
+    - chmod +x plumbline-linux-amd64
+    - ./plumbline-linux-amd64 -register register.md .
 ```
 
 ## Threshold mode
@@ -68,7 +70,7 @@ plumbline            # or ./tools/plumbline-<os>-<arch>
 To gate on a coverage floor rather than strictly, pass `-min-coverage`:
 
 ```sh
-plumbline -min-coverage 80
+./plumbline-linux-amd64 -min-coverage 80 -register register.md .
 ```
 
 Broken anchors and structural errors still fail regardless of the floor.

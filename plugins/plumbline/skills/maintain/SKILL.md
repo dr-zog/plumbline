@@ -76,9 +76,11 @@ package-level doc comment or a designated file.
 
 1. Run `plumbline -json` and read what it flags. Everything traceable to *this*
    change is yours to clear: broken anchors you introduced, orphans you added,
-   items your change left uncovered, and any **dead-end** — an approved item with no
-   `Needs` at all (it can never be covered) — which you fix by giving it a `Needs` edge
-   down the ladder, or setting it to a lower status if it isn't a committed requirement yet.
+   items your change left uncovered, any **dead-end** (an approved item with no `Needs` —
+   give it a `Needs` edge, or a lower status), and any **zombie code** (an anchor left on a
+   `rejected` item — remove the code, or un-reject the item). **Warnings** — build-ahead or
+   status-lag on a not-yet-approved item you touched — don't fail the build; reconcile them
+   by promoting a finished item to `approved`, but they're a nudge, not a blocker.
 2. Pre-existing gaps unrelated to the diff aren't your job to fix here — note them
    and move on (or point the developer at `audit`). Maintain rides the change; it
    isn't a whole-repo sweep.

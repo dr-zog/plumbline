@@ -139,6 +139,9 @@ func writeText(w io.Writer, r report.Report) {
 	if s.PlannedItems > 0 {
 		fmt.Fprintf(w, "  planned        : %d items — proposed/draft, tracked but not gated\n", s.PlannedItems)
 	}
+	if s.WarningCount > 0 {
+		fmt.Fprintf(w, "  warnings       : %d — build-ahead / status-lag (surfaced, never fail)\n", s.WarningCount)
+	}
 	if s.MinCoverage > 0 {
 		fmt.Fprintf(w, "  gate           : threshold — fail below %.1f%%\n", s.MinCoverage)
 	} else {
@@ -179,6 +182,14 @@ func writeText(w io.Writer, r report.Report) {
 		}
 		fmt.Fprintln(w)
 	}
+	if len(r.Zombies) > 0 {
+		fmt.Fprintf(w, "ZOMBIE code (%d) — anchors a rejected requirement:\n", len(r.Zombies))
+		fmt.Fprint(w, "  → fix: remove the code (the requirement was rejected), or un-reject the item if it's back in scope.\n")
+		for _, z := range r.Zombies {
+			fmt.Fprintf(w, "  %s  (%s:%d)\n", z.Tag, z.File, z.Line)
+		}
+		fmt.Fprintln(w)
+	}
 	if len(r.Orphans) > 0 {
 		fmt.Fprintf(w, "ORPHAN code-areas (%d) — directories with no anchor:\n", len(r.Orphans))
 		fmt.Fprint(w, "  → fix: add an anchor in each directory (pointing at the component it implements), or exclude it in plumbline.json.\n")
@@ -192,6 +203,17 @@ func writeText(w io.Writer, r report.Report) {
 		fmt.Fprint(w, "  → fix: give each a Needs edge down the ladder, or drop it below approved if it isn't a committed requirement.\n")
 		for _, d := range r.DeadEnds {
 			fmt.Fprintf(w, "  %s%s  (%s:%d)\n", d.ID, titleOf(d.Title), d.File, d.Line)
+		}
+		fmt.Fprintln(w)
+	}
+	if len(r.Warnings) > 0 {
+		fmt.Fprintf(w, "WARNINGS (%d) — not-yet-approved, but code exists (surfaced, not a failure):\n", len(r.Warnings))
+		for _, wn := range r.Warnings {
+			note := "building ahead of approval"
+			if wn.Kind == "status-lag" {
+				note = "fully covered — promote to approved"
+			}
+			fmt.Fprintf(w, "  [%s · %s] %s%s — %s  (%s:%d)\n", wn.Status, wn.Kind, wn.ID, titleOf(wn.Title), note, wn.File, wn.Line)
 		}
 		fmt.Fprintln(w)
 	}
@@ -213,8 +235,8 @@ func writeText(w io.Writer, r report.Report) {
 	} else {
 		// Lead with progress, not just a verdict — during a large move you want to
 		// see how far along you are, not a bare red.
-		fmt.Fprintf(w, "FAIL — %d/%d items covered; still to clear: %d uncovered, %d dead-end, %d transitive, %d broken, %d orphan, %d structural.\n",
-			s.ShallowCovered, s.ApprovedItems, s.UncoveredCount, s.DeadEndCount, s.TransitiveCount, s.BrokenCount, s.OrphanCount, s.StructuralErrors)
+		fmt.Fprintf(w, "FAIL — %d/%d items covered; still to clear: %d uncovered, %d dead-end, %d zombie, %d transitive, %d broken, %d orphan, %d structural.\n",
+			s.ShallowCovered, s.ApprovedItems, s.UncoveredCount, s.DeadEndCount, s.ZombieCount, s.TransitiveCount, s.BrokenCount, s.OrphanCount, s.StructuralErrors)
 	}
 }
 

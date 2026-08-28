@@ -167,3 +167,13 @@ never be genuinely covered. It fails the gate rather than reading as vacuously c
 
 Covers: feat~bidirectional-audit~1
 Needs: component
+
+### Warn on build-ahead, fail on zombie code
+`req~status-gate-policy~1`
+
+Surface a not-yet-approved (`proposed`/`draft`) item that has coverage as a **warning** —
+build-ahead, or status-lag when fully covered — without failing the gate; and flag code that
+anchors a `rejected` item as **zombie code**, a hard fail distinct from a broken anchor.
+
+Covers: feat~requirement-lifecycle~1
+Needs: component

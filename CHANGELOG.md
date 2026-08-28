@@ -14,9 +14,11 @@ release — never generated from commit messages.
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-08-28
+
 ### Added
 - Honour OFT's `Status` attribute (`approved` / `proposed` / `draft` / `rejected`):
-  `approved` (the default) gates as normal; `proposed` / `draft` are tracked but not
+  `approved` gates as normal; `proposed` / `draft` are tracked but not
   gated, so a requirement can be designed up front and held knowingly uncovered;
   `rejected` is excluded from tracing. Scores are computed over the approved set, and a
   planned count plus a `PLANNED` report section surface the planned-vs-realised view. An
@@ -61,5 +63,6 @@ release — never generated from commit messages.
   windows amd64) via a POSIX launcher.
 - Engineering process docs and ADRs. Plumbline traces itself (100%).
 
-[Unreleased]: https://github.com/dr-zog/plumbline/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/dr-zog/plumbline/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/dr-zog/plumbline/releases/tag/v0.2.0
 [0.1.0]: https://github.com/dr-zog/plumbline/releases/tag/v0.1.0

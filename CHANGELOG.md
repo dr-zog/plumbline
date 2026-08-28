@@ -44,6 +44,9 @@ release — never generated from commit messages.
   `approved`) — a requirement is enforced only when explicitly `Status: approved` (ADR 004).
   Plumbline's own register carries explicit statuses, and `onboard` / the register-authoring
   reference are updated. (Completes #8.)
+- The `audit`, `maintain` and `onboard` skills are now fully fluent in the status/coverage
+  model — approved-set scoring, the planned-vs-realised burndown, status transitions, and
+  dead-end / warning / zombie handling. (Closes #13.)
 
 ## [0.1.0] — 2026-08-27
 

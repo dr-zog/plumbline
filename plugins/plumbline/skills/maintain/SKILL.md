@@ -60,6 +60,22 @@ edit: the file, the item, and the change. For example: *"`component~router` move
 its replacement."* The engine's `→ fix:` hints name the *kind* of edit; you, reading the
 move, name the *exact* one. That's the difference between a chore and a checkbox.
 
+## Keep the status current
+
+A requirement's `Status` is its maturity, and it moves as the work does (ADR 004):
+
+- **Building a `proposed`/`draft` requirement** — leave the status as-is; code against it is
+  an expected **build-ahead** warning, not a failure.
+- **Finishing and committing to it** — promote it to `Status: approved`. That clears the
+  **status-lag** warning, and from now on the gate holds it: it must stay covered.
+- **A new requirement in this change** — set its status deliberately: `approved` if it's a
+  committed part of what you're shipping, `proposed` if it's designed-ahead and not yet built.
+- **Dropping a requirement** — set it `rejected` (and remove its anchored code, or the engine
+  reports **zombie code**). Don't silently delete it; the rejection is part of the record.
+
+A bare item defaults to `proposed`, so if you add a requirement you *are* committing to, say
+`Status: approved` explicitly — otherwise the gate won't enforce it.
+
 ## The anchor, in brief
 
 <!-- oft:off -->

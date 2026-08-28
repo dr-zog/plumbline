@@ -32,10 +32,20 @@ to `onboard` and `maintain`.
 
 4. **Narrate the scorecard.** Lead with the `summary`: the two scores —
    `coveragePct` (direct needs met) and `completenessPct` (the whole chain
-   resolves) — and the gap counts. Note the `gate`: `minCoverage` of 0 is strict
-   (any gap fails); a positive value is a threshold floor; and a **spec-debt budget**
-   (`maxProposed` count / `maxProposedPct` ratio, `-1` = no limit) fails when un-built spec
-   — not-yet-approved `feat`/`req`, reported as `specDebtCount` / `specDebtPct` — exceeds it.
+   resolves), **both computed over the approved set** — and the gap counts. Note the
+   `gate`: `minCoverage` of 0 is strict (any gap fails); a positive value is a threshold
+   floor; and a **spec-debt budget** (`maxProposed` count / `maxProposedPct` ratio, `-1` =
+   no limit) fails when un-built spec — not-yet-approved `feat`/`req`, reported as
+   `specDebtCount` / `specDebtPct` — exceeds it.
+
+   Then read the **status mix** — a requirement's maturity is `draft` → `proposed` →
+   `approved` (committed), with `rejected` abandoned. The summary carries `approvedItems`
+   (gated, the basis for the two scores), `plannedItems` (`proposed`/`draft` — tracked, not
+   gated) and `rejectedItems` (excluded). The `planned` array is the planned-vs-realised
+   **burndown**: each entry's `realised` says whether that not-yet-approved item's chain
+   already resolves to code. Narrate it as *"N approved (X% realised), M planned, K
+   rejected"* so the developer sees committed vs designed-ahead at a glance.
+
    Then walk the gaps in priority order:
    - **Structural errors** (`structural`, severity `error`) — first. The register
      itself breaks the C4 ladder: an unknown type, a disallowed `Needs` edge, or

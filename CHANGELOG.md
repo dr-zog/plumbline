@@ -14,6 +14,11 @@ release — never generated from commit messages.
 
 ## [Unreleased]
 
+### Changed
+- Docs: ADR 005 records the decision to adopt **semantic-release** for automatic,
+  drift-proof, release-on-merge releases (implemented under #10); supersedes ADR 001's
+  release sub-decisions (the marketplace `sha`-pin is dropped in favour of `ref: dist`).
+
 ### Fixed
 - Corrected `plugin.json`'s `version` to `0.2.0` — it had drifted to a stale `0.5.0`,
   unrelated to the release, so Claude Code reported the wrong plugin version.

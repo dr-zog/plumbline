@@ -70,9 +70,9 @@ func TestFixtureEndToEnd(t *testing.T) {
 // TestDeepChainClean checks a fully-covered chain passes strictly.
 func TestDeepChainClean(t *testing.T) {
 	items := []register.Item{
-		{ID: "feat~a~1", Type: "feat", Needs: []string{"req"}},
-		{ID: "req~a~1", Type: "req", Covers: []string{"feat~a~1"}, Needs: []string{"component"}},
-		{ID: "component~a~1", Type: "component", Covers: []string{"req~a~1"}, Needs: []string{"impl"}},
+		{ID: "feat~a~1", Type: "feat", Status: "approved", Needs: []string{"req"}},
+		{ID: "req~a~1", Type: "req", Status: "approved", Covers: []string{"feat~a~1"}, Needs: []string{"component"}},
+		{ID: "component~a~1", Type: "component", Status: "approved", Covers: []string{"req~a~1"}, Needs: []string{"impl"}},
 	}
 	anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~a~1"}}
 	r := Build(items, anchors, []string{"a.go"}, GateOpts{})
@@ -88,9 +88,9 @@ func TestDeepChainClean(t *testing.T) {
 // but broken anchors still fail.
 func TestThresholdGate(t *testing.T) {
 	items := []register.Item{
-		{ID: "req~a~1", Type: "req", Needs: []string{"component"}},
-		{ID: "component~a~1", Type: "component", Covers: []string{"req~a~1"}, Needs: []string{"impl"}},
-		{ID: "req~b~1", Type: "req", Needs: []string{"component"}}, // uncovered
+		{ID: "req~a~1", Type: "req", Status: "approved", Needs: []string{"component"}},
+		{ID: "component~a~1", Type: "component", Status: "approved", Covers: []string{"req~a~1"}, Needs: []string{"impl"}},
+		{ID: "req~b~1", Type: "req", Status: "approved", Needs: []string{"component"}}, // uncovered
 	}
 	anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~a~1"}}
 
@@ -123,8 +123,8 @@ func TestThresholdGate(t *testing.T) {
 func TestStatusLifecycle(t *testing.T) {
 	items := []register.Item{
 		// approved, fully covered
-		{ID: "req~done~1", Type: "req", Needs: []string{"component"}},
-		{ID: "component~done~1", Type: "component", Covers: []string{"req~done~1"}, Needs: []string{"impl"}},
+		{ID: "req~done~1", Type: "req", Status: "approved", Needs: []string{"component"}},
+		{ID: "component~done~1", Type: "component", Status: "approved", Covers: []string{"req~done~1"}, Needs: []string{"impl"}},
 		// proposed, uncovered — tracked, must NOT fail the gate
 		{ID: "req~planned~1", Type: "req", Status: "proposed", Needs: []string{"component"}},
 		// rejected, uncovered — excluded from tracing entirely
@@ -164,9 +164,9 @@ func TestStatusLifecycle(t *testing.T) {
 // hard fail), not a vacuous 100% — while a proposed item with no Needs is not.
 func TestDeadEnd(t *testing.T) {
 	items := []register.Item{
-		{ID: "req~naked~1", Type: "req"},                            // approved (default), no Needs → dead-end
-		{ID: "req~ok~1", Type: "req", Needs: []string{"component"}}, // approved, needs a component
-		{ID: "component~ok~1", Type: "component", Covers: []string{"req~ok~1"}, Needs: []string{"impl"}},
+		{ID: "req~naked~1", Type: "req", Status: "approved"},                            // approved, no Needs → dead-end
+		{ID: "req~ok~1", Type: "req", Status: "approved", Needs: []string{"component"}}, // approved, needs a component
+		{ID: "component~ok~1", Type: "component", Status: "approved", Covers: []string{"req~ok~1"}, Needs: []string{"impl"}},
 		{ID: "req~future~1", Type: "req", Status: "proposed"}, // proposed, no Needs → NOT a dead-end
 	}
 	anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~ok~1"}}
@@ -200,7 +200,7 @@ func TestGatePolicy(t *testing.T) {
 	{
 		items := []register.Item{
 			{ID: "req~lag~1", Type: "req", Status: "proposed", Needs: []string{"component"}},
-			{ID: "component~lag~1", Type: "component", Covers: []string{"req~lag~1"}, Needs: []string{"impl"}},
+			{ID: "component~lag~1", Type: "component", Status: "approved", Covers: []string{"req~lag~1"}, Needs: []string{"impl"}},
 		}
 		anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~lag~1"}}
 		r := Build(items, anchors, []string{"a.go"}, GateOpts{})
@@ -247,8 +247,8 @@ func TestGatePolicy(t *testing.T) {
 // the optional budget gate (count and percentage).
 func TestSpecDebtBudget(t *testing.T) {
 	items := []register.Item{
-		{ID: "req~a~1", Type: "req", Needs: []string{"component"}}, // approved
-		{ID: "component~a~1", Type: "component", Covers: []string{"req~a~1"}, Needs: []string{"impl"}},
+		{ID: "req~a~1", Type: "req", Status: "approved", Needs: []string{"component"}}, // approved
+		{ID: "component~a~1", Type: "component", Status: "approved", Covers: []string{"req~a~1"}, Needs: []string{"impl"}},
 		{ID: "req~b~1", Type: "req", Status: "proposed", Needs: []string{"component"}}, // un-built spec
 		{ID: "req~c~1", Type: "req", Status: "draft", Needs: []string{"component"}},    // un-built spec
 	}

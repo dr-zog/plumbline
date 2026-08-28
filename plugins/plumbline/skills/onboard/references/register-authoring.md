@@ -58,6 +58,11 @@ Needs: impl
   chosen technology here (the engine warns otherwise).
 - **`Needs:`** — comma-separated artifact types this item requires coverage in.
 - **`Covers:`** — comma-separated IDs of items this one covers (points up the chain).
+- **`Status:`** — `approved` / `proposed` / `draft` / `rejected`. **A bare item defaults to
+  `proposed`** (provisional — tracked, but *not* gated), so mark a committed requirement
+  `Status: approved` for the gate to enforce it. `proposed`/`draft` with code raises a
+  warning (build-ahead); `rejected` is excluded, and code anchoring a `rejected` item is
+  zombie code (a hard fail). See ADR 004.
 - **Revisions** — when an item's *meaning* changes, bump the revision rather than
   editing in place. This is OFT semantics: it invalidates stale links so coverers
   know to re-check. A typo fix does not warrant a bump.
@@ -109,6 +114,7 @@ Register:
 ## Features
 ### Authentication
 `feat~authentication~1`
+Status: approved
 
 Users can authenticate before accessing the system.
 
@@ -117,6 +123,7 @@ Needs: req
 ## Requirements
 ### Validate authentication request
 `req~validate-auth-request~1`
+Status: approved
 
 Every authentication request is validated before access is granted.
 
@@ -126,6 +133,7 @@ Needs: component
 ## Components
 ### Auth validator
 `component~auth-validator~1`
+Status: approved
 
 Validates credentials and issues session tokens. (In the "api" container: a Go HTTP service.)
 

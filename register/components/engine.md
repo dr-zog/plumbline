@@ -7,6 +7,7 @@ cross-file references just work.
 
 ### Anchor scanner
 `component~anchor-scanner~1`
+Status: approved
 
 Walks a tree and extracts anchors from comments (`internal/anchor`).
 
@@ -15,6 +16,7 @@ Needs: impl, utest
 
 ### Register parser
 `component~register-parser~1`
+Status: approved
 
 Parses the OFT-native Markdown register, one file or a tree (`internal/register`).
 
@@ -23,6 +25,7 @@ Needs: impl, utest
 
 ### C4 validator
 `component~c4-validator~1`
+Status: approved
 
 The locked type ladder and structural validation (`internal/c4`).
 
@@ -31,6 +34,7 @@ Needs: impl, utest
 
 ### Report builder
 `component~report-builder~1`
+Status: approved
 
 Cross-checks anchors against the register, resolves deep coverage, and builds the
 bidirectional report and scorecard (`internal/report`).
@@ -40,6 +44,7 @@ Needs: impl, utest
 
 ### Config loader
 `component~config-loader~1`
+Status: approved
 
 Loads the optional JSON config and merges it over locked defaults (`internal/config`).
 
@@ -48,6 +53,7 @@ Needs: impl, utest
 
 ### Command-line interface
 `component~cli~1`
+Status: approved
 
 Wires config, scan, register and report, returns the gate exit code, and reports the
 build version (`cmd/plumbline`).
@@ -57,6 +63,7 @@ Needs: impl
 
 ### Build tooling
 `component~build-tooling~1`
+Status: approved
 
 Cross-compiles the engine for every target and fuses the macOS universal binary
 (`Makefile`, `tools/makefat`).

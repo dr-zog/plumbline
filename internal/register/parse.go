@@ -33,12 +33,12 @@ type Item struct {
 	Line   int      `json:"line"`
 }
 
-// statusValue returns the item's lifecycle status, defaulting to "approved" when
-// none is declared — OFT's default, and also the sensible reading of an item
-// constructed without a status.
+// statusValue returns the item's lifecycle status, defaulting to "proposed" when
+// none is declared. This deliberately diverges from OFT's "approved" default (see
+// ADR 004): a requirement is committed only when explicitly declared `approved`.
 func (it Item) statusValue() string {
 	if it.Status == "" {
-		return "approved"
+		return "proposed"
 	}
 	return strings.ToLower(it.Status)
 }
@@ -123,7 +123,7 @@ func parse(r io.Reader, path string) ([]Item, error) {
 				Name:   m[2],
 				Rev:    rev,
 				Title:  lastHeading,
-				Status: "approved",
+				Status: "proposed",
 				File:   path,
 				Line:   line,
 			})

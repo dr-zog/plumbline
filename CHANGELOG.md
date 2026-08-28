@@ -40,6 +40,10 @@ release — never generated from commit messages.
   label escape (which was timing-fragile) has been removed.
 - Docs: ADR 004 records the requirement status-lifecycle model (supersedes ADR 003's
   `absent = approved` sub-decision); `writing-adrs.md` now notes that ADRs need no ticket.
+- **Breaking:** a register item with no `Status:` now defaults to **`proposed`** (not OFT's
+  `approved`) — a requirement is enforced only when explicitly `Status: approved` (ADR 004).
+  Plumbline's own register carries explicit statuses, and `onboard` / the register-authoring
+  reference are updated. (Completes #8.)
 
 ## [0.1.0] — 2026-08-27
 

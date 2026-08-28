@@ -6,6 +6,7 @@ aggregates every `.md` here into one register.
 
 ### Plumbline
 `context~plumbline~1`
+Status: approved
 
 Light-touch, enforced requirement↔code traceability for a codebase, used by a
 developer at their desk and enforced in CI.

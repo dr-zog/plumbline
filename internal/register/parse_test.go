@@ -83,12 +83,12 @@ func TestStatus(t *testing.T) {
 		t.Fatalf("items = %d, want 2", len(items))
 	}
 
-	// An absent status defaults to approved.
-	if got := items[0].StatusOrDefault(); got != "approved" {
-		t.Errorf("default status = %q, want approved", got)
+	// An absent status now defaults to proposed (ADR 004).
+	if got := items[0].StatusOrDefault(); got != "proposed" {
+		t.Errorf("default status = %q, want proposed", got)
 	}
-	if !items[0].Approved() {
-		t.Error("item without a status line should be Approved()")
+	if !items[0].Planned() {
+		t.Error("item without a status line should default to proposed (Planned)")
 	}
 
 	// A Status line right under the ID must be recognised as an attribute, not

@@ -70,7 +70,9 @@ to `onboard` and `maintain`.
    items that already have code: `kind` is **build-ahead** (code for a `proposed`/`draft`
    spec — reconcile when the spec firms up) or **status-lag** (fully covered → promote it to
    `approved`). The hard fails are structural, broken, **zombie**, dead-end, and — under
-   strict gating — uncovered/transitive/orphan; a warning is a nudge, not a failure.
+   strict gating — uncovered/transitive/orphan; a warning is a nudge, not a failure. (A bare
+   item defaults to `proposed`, so an un-statused requirement shows as planned/warning, not
+   gated — ADR 004.)
 
 5. **Prioritise the weakest areas.** Group orphans by directory to spot whole
    unanchored subsystems; follow each transitive defect down to the uncovered

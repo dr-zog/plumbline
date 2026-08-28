@@ -9,6 +9,7 @@ anchor and an orphan code-area.
 
 ### Authentication
 `feat~authentication~1`
+Status: approved
 
 Users can authenticate before accessing the system.
 
@@ -16,6 +17,7 @@ Needs: req
 
 ### Key management
 `feat~key-management~1`
+Status: approved
 
 Signing keys are managed on a schedule.
 
@@ -25,6 +27,7 @@ Needs: req
 
 ### Validate authentication request
 `req~validate-auth-request~1`
+Status: approved
 
 Every authentication request is validated before access is granted.
 
@@ -33,6 +36,7 @@ Needs: component
 
 ### Rotate signing keys
 `req~rotate-signing-keys~1`
+Status: approved
 
 Signing keys are rotated on a fixed schedule. Deliberately left with no covering
 component, to demonstrate an uncovered requirement — which in turn leaves the
@@ -45,6 +49,7 @@ Needs: component
 
 ### Auth validator
 `component~auth-validator~1`
+Status: approved
 
 Validates credentials and issues session tokens.
 

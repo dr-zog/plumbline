@@ -4,6 +4,7 @@ The C4 components of the Claude Code plugin: one per skill.
 
 ### Audit skill
 `component~audit-skill~1`
+Status: approved
 
 Runs the engine and narrates a prioritised scorecard.
 
@@ -12,6 +13,7 @@ Needs: impl
 
 ### Onboard skill
 `component~onboard-skill~1`
+Status: approved
 
 Guided, level-by-level C4 build plus initial anchors.
 
@@ -20,6 +22,7 @@ Needs: impl
 
 ### Maintain skill
 `component~maintain-skill~1`
+Status: approved
 
 Rides the staged diff to keep anchors and the register current.
 
@@ -28,6 +31,7 @@ Needs: impl
 
 ### Enforce skill
 `component~enforce-skill~1`
+Status: approved
 
 Installs the developer's chosen pre-commit and/or CI gate.
 
@@ -36,6 +40,7 @@ Needs: impl
 
 ### Showcase skill
 `component~showcase-skill~1`
+Status: approved
 
 Renders the register into glossy, human-facing HTML collateral (two-pager, whitepaper).
 

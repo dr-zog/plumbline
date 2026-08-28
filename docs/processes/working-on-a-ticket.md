@@ -47,7 +47,8 @@ work *starts*.
    capabilities, and either update it in lockstep or ticket the update. A skill that
    misdescribes what the platform does misleads the AIs that consume it — the same
    requirement↔reality rot Plumbline exists to prevent, one level up.
-9. **Land it** via a GitHub PR — see [raising-a-pr.md](raising-a-pr.md).
+9. **Land it** via a GitHub PR — see [raising-a-pr.md](raising-a-pr.md) for the
+   Conventional-Commit PR title (it drives the version + changelog) and release-on-merge.
 
 ## Notes
 

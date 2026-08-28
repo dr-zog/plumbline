@@ -6,12 +6,14 @@
 # the binaries to the orphan `dist` branch. Auth is a dedicated GitHub App (a bot
 # identity, no personal token) that bypasses the `main` and `v*` rulesets.
 #
-# Step 4 ships this on `workflow_dispatch` only (default: dry-run) so we can validate
-# the App auth + version computation before any real release can fire. A follow-up adds
-# the `push: [main]` trigger that makes releases actually land on merge.
+# Runs on every push to `main` (a merged PR): a releasable commit lands a real release,
+# anything else is a no-op. Can also be run manually via `workflow_dispatch` (default:
+# dry-run) to preview. The bot's own `[skip ci]` release commit does not re-trigger it.
 name: release
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -63,6 +65,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23'
+          cache: false # nothing to cache — the engine has no external dependencies
 
       - uses: actions/setup-node@v4
         with:

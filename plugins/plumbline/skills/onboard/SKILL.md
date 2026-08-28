@@ -65,6 +65,8 @@ container) as it grows; Plumbline aggregates every `.md` into one register eithe
 As you go, wire the chain with `Covers`/`Needs`: a `component` Covers the `req` it
 realises, a `req` Covers its `feat`, a `container` Covers the `context`. The engine
 validates these against the locked ladder, so a mis-wired link is caught immediately.
+Every `approved` item must declare a downward `Needs` — an approved item with no `Needs` is
+a **dead-end** (a hard fail), so wire it before you approve it.
 
 ## Place the anchors — adaptively
 

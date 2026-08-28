@@ -44,3 +44,4 @@ Sources and evidence behind the decision, so it can be re-checked.
 - [003 — OpenFastTrace conformance boundary](003-oft-conformance-boundary.md)
 - [004 — Requirement status lifecycle](004-requirement-status-lifecycle.md)
 - [005 — Automated releases via semantic-release](005-automated-releases-semantic-release.md)
+- [006 — GitHub Release binaries for pinned consumption](006-release-binaries-for-ci.md)

@@ -8,7 +8,8 @@
 // Item status governs tracing (see ADR 004): rejected items are excluded, and
 // code that anchors one is zombie code (a hard fail); approved items are gated
 // and scored; proposed/draft items are tracked, and code against them is a
-// warning (building ahead of approval), never a gate failure.
+// warning (building ahead of approval), never a gate failure. Un-built spec
+// (not-yet-approved feat/req) is bounded by an optional spec-debt budget.
 //
 // The one report yields both a gate (OK / exit code) and a scorecard (coverage
 // and completeness percentages, gap counts) the skills narrate.
@@ -25,6 +26,13 @@ import (
 	"github.com/dr-zog/plumbline/internal/c4"
 	"github.com/dr-zog/plumbline/internal/register"
 )
+
+// GateOpts tunes the gate: the coverage threshold and the spec-debt budget.
+type GateOpts struct {
+	MinCoverage    float64  // 0 = strict (any gap fails); >0 = fail below this shallow %
+	MaxProposed    *int     // nil = no limit on the un-built-spec count
+	MaxProposedPct *float64 // nil = no limit on the un-built-spec ratio
+}
 
 // Report is the full bidirectional traceability result.
 type Report struct {
@@ -57,9 +65,14 @@ type Summary struct {
 	OrphanCount      int     `json:"orphanCount"`
 	StructuralErrors int     `json:"structuralErrorCount"`
 	DeadEndCount     int     `json:"deadEndCount"`
-	ZombieCount      int     `json:"zombieCount"`  // code anchoring a rejected item — fails
-	WarningCount     int     `json:"warningCount"` // build-ahead / status-lag — never fails
-	MinCoverage      float64 `json:"minCoverage"`  // gate threshold (0 = strict)
+	ZombieCount      int     `json:"zombieCount"`    // code anchoring a rejected item — fails
+	WarningCount     int     `json:"warningCount"`   // build-ahead / status-lag — never fails
+	SpecDebtCount    int     `json:"specDebtCount"`  // un-built feat/req (not-yet-approved, un-realised)
+	SpecTotalItems   int     `json:"specTotalItems"` // all non-rejected feat/req
+	SpecDebtPct      float64 `json:"specDebtPct"`    // specDebtCount / specTotalItems
+	MinCoverage      float64 `json:"minCoverage"`    // gate threshold (0 = strict)
+	MaxProposed      int     `json:"maxProposed"`    // spec-debt budget (count); -1 = no limit
+	MaxProposedPct   float64 `json:"maxProposedPct"` // spec-debt budget (%); -1 = no limit
 	OK               bool    `json:"ok"`
 }
 
@@ -145,10 +158,10 @@ type Planned struct {
 }
 
 // Build cross-checks anchors against register items and scanned source files.
-// minCoverage of 0 selects strict gating (any gap fails); a positive value
-// selects threshold gating (fail below that shallow-coverage percentage, but
-// broken anchors, structural errors, dead-ends and zombie code always fail).
-func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string, minCoverage float64) Report {
+// Gating: broken anchors, structural errors, dead-ends and zombie code always
+// fail; strict mode fails on any gap; a coverage threshold or a spec-debt budget
+// (GateOpts) adds further conditions.
+func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string, opts GateOpts) Report {
 	// Status governs tracing: rejected items are excluded from coverage (OFT), but
 	// remembered so code anchoring one reads as zombie code, not a broken anchor.
 	var traced []register.Item
@@ -240,6 +253,7 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 	var warnings []Warning
 	var planned []Planned
 	shallowCount, deepCount, approvedCount := 0, 0, 0
+	specDebtCount, specTotal := 0, 0
 
 	for _, it := range traced {
 		var missing []string
@@ -250,6 +264,15 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 		}
 		isShallow := len(missing) == 0
 		isDeep := isShallow && deep(it)
+
+		// Spec-debt budget is measured over the requirements/features axis only:
+		// a not-yet-approved feat/req that isn't fully realised is un-built spec.
+		if it.Type == "feat" || it.Type == "req" {
+			specTotal++
+			if it.Planned() && !isDeep {
+				specDebtCount++
+			}
+		}
 
 		// Proposed/draft: tracked, never gated. Code against one is a warning —
 		// building ahead of approval (status-lag once fully covered) — not a gap.
@@ -371,10 +394,15 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 			DeadEndCount:     len(deadEnds),
 			ZombieCount:      len(zombies),
 			WarningCount:     len(warnings),
-			MinCoverage:      minCoverage,
+			SpecDebtCount:    specDebtCount,
+			SpecTotalItems:   specTotal,
+			SpecDebtPct:      pctOrZero(specDebtCount, specTotal),
+			MinCoverage:      opts.MinCoverage,
+			MaxProposed:      derefOr(opts.MaxProposed, -1),
+			MaxProposedPct:   derefFloatOr(opts.MaxProposedPct, -1),
 		},
 	}
-	r.Summary.OK = gate(r.Summary, minCoverage)
+	r.Summary.OK = gate(r.Summary, opts)
 	return r
 }
 
@@ -406,15 +434,22 @@ func weakCoverers(it register.Item, coverers map[string][]register.Item, deep fu
 }
 
 // gate decides the pass/fail. Broken anchors, structural errors, dead-ends and
-// zombie code always fail. Otherwise: threshold mode fails below minCoverage;
-// strict mode fails on any gap. Warnings never fail; only approved items reach
-// the gap lists, so proposed/draft items never fail it.
-func gate(s Summary, minCoverage float64) bool {
+// zombie code always fail. Then the spec-debt budget (if set) fails when un-built
+// spec exceeds it. Then: threshold mode fails below minCoverage; strict mode fails
+// on any gap. Warnings never fail; only approved items reach the gap lists, so
+// proposed/draft items never fail it.
+func gate(s Summary, opts GateOpts) bool {
 	if s.BrokenCount > 0 || s.StructuralErrors > 0 || s.DeadEndCount > 0 || s.ZombieCount > 0 {
 		return false
 	}
-	if minCoverage > 0 {
-		return s.CoveragePct >= minCoverage
+	if opts.MaxProposed != nil && s.SpecDebtCount > *opts.MaxProposed {
+		return false
+	}
+	if opts.MaxProposedPct != nil && s.SpecDebtPct > *opts.MaxProposedPct {
+		return false
+	}
+	if opts.MinCoverage > 0 {
+		return s.CoveragePct >= opts.MinCoverage
 	}
 	return s.UncoveredCount == 0 && s.TransitiveCount == 0 && s.OrphanCount == 0
 }
@@ -424,4 +459,27 @@ func pct(n, total int) float64 {
 		return 100.0
 	}
 	return math.Round(float64(n)/float64(total)*1000) / 10
+}
+
+// pctOrZero is like pct but returns 0 for an empty set (no spec = no debt, not
+// "100% debt").
+func pctOrZero(n, total int) float64 {
+	if total == 0 {
+		return 0
+	}
+	return math.Round(float64(n)/float64(total)*1000) / 10
+}
+
+func derefOr(p *int, d int) int {
+	if p != nil {
+		return *p
+	}
+	return d
+}
+
+func derefFloatOr(p *float64, d float64) float64 {
+	if p != nil {
+		return *p
+	}
+	return d
 }

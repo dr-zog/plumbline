@@ -30,6 +30,10 @@ release — never generated from commit messages.
   is surfaced as a **warning** — build-ahead, or status-lag when fully covered — never a gate
   failure; and an anchor pointing at a `rejected` item is **zombie code**, a hard fail
   distinct from a broken anchor. The `audit` and `maintain` skills narrate both. (Part of #8.)
+- Spec-debt budget (ADR 004): the un-built spec — not-yet-approved, un-realised `feat`/`req`
+  — is scored as a count and a ratio, and gated against an optional budget (`maxProposed`,
+  `maxProposedPct` in `plumbline.json`). Over budget fails the build; the `audit` skill
+  narrates it. (Part of #8.)
 
 ### Changed
 - CI: the changelog gate now requires an entry on **every** PR — the `skip-changelog`

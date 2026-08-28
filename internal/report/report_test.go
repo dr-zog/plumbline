@@ -23,7 +23,7 @@ func TestFixtureEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r := Build(items, anchors, files, 0)
+	r := Build(items, anchors, files, GateOpts{})
 
 	if r.Summary.OK {
 		t.Fatal("expected gaps, got OK")
@@ -75,7 +75,7 @@ func TestDeepChainClean(t *testing.T) {
 		{ID: "component~a~1", Type: "component", Covers: []string{"req~a~1"}, Needs: []string{"impl"}},
 	}
 	anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~a~1"}}
-	r := Build(items, anchors, []string{"a.go"}, 0)
+	r := Build(items, anchors, []string{"a.go"}, GateOpts{})
 	if !r.Summary.OK {
 		t.Fatalf("expected OK, got %+v", r.Summary)
 	}
@@ -96,22 +96,22 @@ func TestThresholdGate(t *testing.T) {
 
 	// 1 of 3 items shallow-covered directly... req~a is shallow (component covers
 	// it), component~a deep, req~b uncovered => 2/3 = 66.7%.
-	strict := Build(items, anchors, []string{"a.go"}, 0)
+	strict := Build(items, anchors, []string{"a.go"}, GateOpts{})
 	if strict.Summary.OK {
 		t.Error("strict: expected FAIL on the uncovered item")
 	}
-	pass := Build(items, anchors, []string{"a.go"}, 60)
+	pass := Build(items, anchors, []string{"a.go"}, GateOpts{MinCoverage: 60})
 	if !pass.Summary.OK {
 		t.Errorf("threshold 60%%: expected OK at %.1f%%", pass.Summary.CoveragePct)
 	}
-	fail := Build(items, anchors, []string{"a.go"}, 90)
+	fail := Build(items, anchors, []string{"a.go"}, GateOpts{MinCoverage: 90})
 	if fail.Summary.OK {
 		t.Error("threshold 90%: expected FAIL below the floor")
 	}
 
 	// A broken anchor must fail even under a lenient threshold.
 	withBroken := append(anchors, anchor.Anchor{File: "b.go", Line: 1, Covering: "impl", TargetID: "component~ghost~1", Raw: "[impl->component~ghost~1]"})
-	broken := Build(items, withBroken, []string{"a.go", "b.go"}, 1)
+	broken := Build(items, withBroken, []string{"a.go", "b.go"}, GateOpts{MinCoverage: 1})
 	if broken.Summary.OK {
 		t.Error("broken anchor must fail even in threshold mode")
 	}
@@ -131,7 +131,7 @@ func TestStatusLifecycle(t *testing.T) {
 		{ID: "req~dropped~1", Type: "req", Status: "rejected", Needs: []string{"component"}},
 	}
 	anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~done~1"}}
-	r := Build(items, anchors, []string{"a.go"}, 0)
+	r := Build(items, anchors, []string{"a.go"}, GateOpts{})
 
 	if !r.Summary.OK {
 		t.Fatalf("expected OK — proposed uncovered must not fail, rejected excluded; got %+v", r.Summary)
@@ -170,7 +170,7 @@ func TestDeadEnd(t *testing.T) {
 		{ID: "req~future~1", Type: "req", Status: "proposed"}, // proposed, no Needs → NOT a dead-end
 	}
 	anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~ok~1"}}
-	r := Build(items, anchors, []string{"a.go"}, 0)
+	r := Build(items, anchors, []string{"a.go"}, GateOpts{})
 
 	if r.Summary.OK {
 		t.Fatal("expected FAIL — an approved item with no Needs is a dead-end")
@@ -203,7 +203,7 @@ func TestGatePolicy(t *testing.T) {
 			{ID: "component~lag~1", Type: "component", Covers: []string{"req~lag~1"}, Needs: []string{"impl"}},
 		}
 		anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~lag~1"}}
-		r := Build(items, anchors, []string{"a.go"}, 0)
+		r := Build(items, anchors, []string{"a.go"}, GateOpts{})
 		if !r.Summary.OK {
 			t.Fatalf("status-lag must not fail the gate; got %+v", r.Summary)
 		}
@@ -218,7 +218,7 @@ func TestGatePolicy(t *testing.T) {
 			{ID: "req~ba~1", Type: "req", Status: "proposed", Needs: []string{"component"}},
 			{ID: "component~ba~1", Type: "component", Status: "proposed", Covers: []string{"req~ba~1"}, Needs: []string{"impl"}},
 		}
-		r := Build(items, nil, nil, 0)
+		r := Build(items, nil, nil, GateOpts{})
 		if !r.Summary.OK {
 			t.Fatalf("build-ahead must not fail the gate; got %+v", r.Summary)
 		}
@@ -233,12 +233,45 @@ func TestGatePolicy(t *testing.T) {
 			{ID: "req~gone~1", Type: "req", Status: "rejected", Needs: []string{"component"}},
 		}
 		anchors := []anchor.Anchor{{File: "z.go", Line: 3, Covering: "impl", TargetID: "req~gone~1", Raw: "[impl->req~gone~1]"}}
-		r := Build(items, anchors, []string{"z.go"}, 0)
+		r := Build(items, anchors, []string{"z.go"}, GateOpts{})
 		if r.Summary.OK {
 			t.Fatal("zombie code must fail the gate")
 		}
 		if r.Summary.ZombieCount != 1 || r.Summary.BrokenCount != 0 {
 			t.Errorf("zombie=%d broken=%d, want 1 and 0 (not a broken anchor)", r.Summary.ZombieCount, r.Summary.BrokenCount)
 		}
+	}
+}
+
+// TestSpecDebtBudget checks the spec-debt count/ratio over the feat/req axis and
+// the optional budget gate (count and percentage).
+func TestSpecDebtBudget(t *testing.T) {
+	items := []register.Item{
+		{ID: "req~a~1", Type: "req", Needs: []string{"component"}}, // approved
+		{ID: "component~a~1", Type: "component", Covers: []string{"req~a~1"}, Needs: []string{"impl"}},
+		{ID: "req~b~1", Type: "req", Status: "proposed", Needs: []string{"component"}}, // un-built spec
+		{ID: "req~c~1", Type: "req", Status: "draft", Needs: []string{"component"}},    // un-built spec
+	}
+	anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~a~1"}}
+
+	// feat/req axis = req~a, req~b, req~c (3); component~a is off-axis. Un-built spec
+	// = req~b + req~c (not-yet-approved, not realised) = 2 → 66.7%.
+	base := Build(items, anchors, []string{"a.go"}, GateOpts{})
+	if base.Summary.SpecDebtCount != 2 || base.Summary.SpecTotalItems != 3 {
+		t.Fatalf("specDebt = %d/%d, want 2/3", base.Summary.SpecDebtCount, base.Summary.SpecTotalItems)
+	}
+	if !base.Summary.OK {
+		t.Error("no budget set → must not fail on spec-debt")
+	}
+
+	one, two, fifty := 1, 2, 50.0
+	if Build(items, anchors, []string{"a.go"}, GateOpts{MaxProposed: &one}).Summary.OK {
+		t.Error("spec-debt 2 over budget ≤1 must fail")
+	}
+	if !Build(items, anchors, []string{"a.go"}, GateOpts{MaxProposed: &two}).Summary.OK {
+		t.Error("spec-debt 2 within budget ≤2 must pass")
+	}
+	if Build(items, anchors, []string{"a.go"}, GateOpts{MaxProposedPct: &fifty}).Summary.OK {
+		t.Error("spec-debt 66.7% over budget ≤50% must fail")
 	}
 }

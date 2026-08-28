@@ -18,6 +18,10 @@ type Config struct {
 	Roots       []string `json:"roots"`       // source roots to scan (default ["."])
 	Exclude     []string `json:"exclude"`     // cleaned paths to skip
 	MinCoverage float64  `json:"minCoverage"` // 0 = strict gating; >0 = fail below this %
+
+	// Spec-debt budget over the requirements/features axis — nil = no limit.
+	MaxProposed    *int     `json:"maxProposed,omitempty"`    // max un-built feat/req allowed (count)
+	MaxProposedPct *float64 `json:"maxProposedPct,omitempty"` // max un-built feat/req allowed (%)
 }
 
 // Default returns the locked defaults.
@@ -60,6 +64,12 @@ func Merge(base, over Config) Config {
 	}
 	if over.MinCoverage != 0 {
 		base.MinCoverage = over.MinCoverage
+	}
+	if over.MaxProposed != nil {
+		base.MaxProposed = over.MaxProposed
+	}
+	if over.MaxProposedPct != nil {
+		base.MaxProposedPct = over.MaxProposedPct
 	}
 	return base
 }

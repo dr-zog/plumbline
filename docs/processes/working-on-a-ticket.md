@@ -40,7 +40,14 @@ work *starts*.
 7. **Verify** — all of:
    - `go test ./...` · `go vet ./...` · `gofmt -l .` (clean)
    - `plumbline` (self-trace green — 0 uncovered/broken/orphan/transitive/structural)
-8. **Land it** via a GitHub PR — see [raising-a-pr.md](raising-a-pr.md).
+8. **Skills audit (on material change).** If this change materially **adds, removes, or
+   alters platform functionality** — anything a consumer sees in the engine's output or
+   behaviour — run a **full, detailed audit of the product skills**
+   (`plugins/plumbline/skills/`): check *every* one against the platform's current
+   capabilities, and either update it in lockstep or ticket the update. A skill that
+   misdescribes what the platform does misleads the AIs that consume it — the same
+   requirement↔reality rot Plumbline exists to prevent, one level up.
+9. **Land it** via a GitHub PR — see [raising-a-pr.md](raising-a-pr.md).
 
 ## Notes
 

@@ -1,6 +1,6 @@
 ---
 name: audit
-description: Run the Plumbline engine over a repository and narrate the traceability scorecard — coverage, uncovered requirements, broken anchors and orphan code-areas — prioritising the weakest areas. Use when someone asks to audit, score, or check requirement↔code traceability, or how well a codebase is anchored.
+description: Run the Plumbline engine over a repository and narrate the traceability scorecard — coverage, uncovered requirements, dead-ends, broken anchors and orphan code-areas — prioritising the weakest areas. Use when someone asks to audit, score, or check requirement↔code traceability, or how well a codebase is anchored.
 ---
 
 <!-- [impl->component~audit-skill~1] -->
@@ -45,6 +45,13 @@ to `onboard` and `maintain`.
    - **Uncovered** (`uncovered`) — a documented item whose needed coverage
      nothing provides. The `missing` array lists which artifact types have no
      anchor and no covering register item.
+   - **Dead-ends** (`deadEnds`, count `deadEndCount`) — an *approved* item that declares
+     no `Needs` at all. In the locked ladder every register-item type must need something
+     below it, so this can never be covered; it's a **hard fail** (like broken/structural,
+     it fails regardless of any coverage threshold), and the engine excludes it from the
+     covered count so it can't fake a green score. Fix: give it a `Needs` edge down the
+     ladder, or set it to a lower status (`proposed`/`draft`) if it isn't a committed
+     requirement yet.
    - **Transitive defects** (`transitiveDefects`) — an item whose *direct* needs
      are met, but a coverer further down the chain isn't itself covered
      (`weakCoverers` names them). Coverage looks fine one level up; the hole is

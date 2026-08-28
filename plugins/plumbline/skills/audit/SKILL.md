@@ -33,8 +33,10 @@ to `onboard` and `maintain`.
 4. **Narrate the scorecard.** Lead with the `summary`: the two scores —
    `coveragePct` (direct needs met) and `completenessPct` (the whole chain
    resolves) — and the gap counts. Note the `gate`: `minCoverage` of 0 is strict
-   (any gap fails); a positive value is a threshold floor. Then walk the gaps in
-   priority order:
+   (any gap fails); a positive value is a threshold floor; and a **spec-debt budget**
+   (`maxProposed` count / `maxProposedPct` ratio, `-1` = no limit) fails when un-built spec
+   — not-yet-approved `feat`/`req`, reported as `specDebtCount` / `specDebtPct` — exceeds it.
+   Then walk the gaps in priority order:
    - **Structural errors** (`structural`, severity `error`) — first. The register
      itself breaks the C4 ladder: an unknown type, a disallowed `Needs` edge, or
      a `Covers` link whose target is missing or the wrong type. The model is

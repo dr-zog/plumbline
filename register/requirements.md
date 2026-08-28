@@ -177,3 +177,13 @@ anchors a `rejected` item as **zombie code**, a hard fail distinct from a broken
 
 Covers: feat~requirement-lifecycle~1
 Needs: component
+
+### Bound the spec-debt budget
+`req~spec-debt-budget~1`
+
+Score the un-built spec — not-yet-approved, un-realised `feat`/`req` items — as a count and a
+ratio, and gate against an optional budget (`maxProposed` count, `maxProposedPct` ratio) so a
+project can bound how much of its requirements spec runs ahead of the code.
+
+Covers: feat~data-driven-scorecard~1
+Needs: component

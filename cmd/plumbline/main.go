@@ -109,7 +109,11 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 
-	rep := report.Build(items, anchors, files, cfg.MinCoverage)
+	rep := report.Build(items, anchors, files, report.GateOpts{
+		MinCoverage:    cfg.MinCoverage,
+		MaxProposed:    cfg.MaxProposed,
+		MaxProposedPct: cfg.MaxProposedPct,
+	})
 
 	if *asJSON {
 		enc := json.NewEncoder(stdout)
@@ -141,6 +145,24 @@ func writeText(w io.Writer, r report.Report) {
 	}
 	if s.WarningCount > 0 {
 		fmt.Fprintf(w, "  warnings       : %d — build-ahead / status-lag (surfaced, never fail)\n", s.WarningCount)
+	}
+	if s.SpecDebtCount > 0 || s.MaxProposed >= 0 || s.MaxProposedPct >= 0 {
+		line := fmt.Sprintf("  spec-debt      : %d/%d feat+req un-built (%.1f%%)", s.SpecDebtCount, s.SpecTotalItems, s.SpecDebtPct)
+		if s.MaxProposed >= 0 || s.MaxProposedPct >= 0 {
+			over := (s.MaxProposed >= 0 && s.SpecDebtCount > s.MaxProposed) || (s.MaxProposedPct >= 0 && s.SpecDebtPct > s.MaxProposedPct)
+			budget := "budget"
+			if s.MaxProposed >= 0 {
+				budget += fmt.Sprintf(" ≤%d", s.MaxProposed)
+			}
+			if s.MaxProposedPct >= 0 {
+				budget += fmt.Sprintf(" ≤%.1f%%", s.MaxProposedPct)
+			}
+			if over {
+				budget += " — OVER (fails)"
+			}
+			line += "   [" + budget + "]"
+		}
+		fmt.Fprintln(w, line)
 	}
 	if s.MinCoverage > 0 {
 		fmt.Fprintf(w, "  gate           : threshold — fail below %.1f%%\n", s.MinCoverage)

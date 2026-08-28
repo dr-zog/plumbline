@@ -52,3 +52,19 @@ func TestMergeRegisters(t *testing.T) {
 		t.Errorf("register = %q, want register.md", merged.Register)
 	}
 }
+
+func TestMergeBudget(t *testing.T) {
+	n, pct := 5, 12.5
+	merged := Merge(Default(), Config{MaxProposed: &n, MaxProposedPct: &pct})
+	if merged.MaxProposed == nil || *merged.MaxProposed != 5 {
+		t.Errorf("maxProposed = %v, want 5", merged.MaxProposed)
+	}
+	if merged.MaxProposedPct == nil || *merged.MaxProposedPct != 12.5 {
+		t.Errorf("maxProposedPct = %v, want 12.5", merged.MaxProposedPct)
+	}
+	// Absent in the overlay → stays nil (no limit).
+	plain := Merge(Default(), Config{})
+	if plain.MaxProposed != nil || plain.MaxProposedPct != nil {
+		t.Error("budget should default to nil (no limit)")
+	}
+}

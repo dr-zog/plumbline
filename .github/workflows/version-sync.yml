@@ -12,7 +12,7 @@ on:
   pull_request:
 
 jobs:
-  check:
+  version-sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

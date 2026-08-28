@@ -14,6 +14,11 @@ release — never generated from commit messages.
 
 ## [Unreleased]
 
+### Added
+- CI: a Conventional-Commit **PR-title lint** and a **version-drift check**
+  (`plugin.json` must equal the latest release tag) — the first, additive step
+  toward automated releases (#10, ADR 005).
+
 ### Changed
 - Docs: ADR 005 records the decision to adopt **semantic-release** for automatic,
   drift-proof, release-on-merge releases (implemented under #10); supersedes ADR 001's

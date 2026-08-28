@@ -14,7 +14,7 @@ GOFLAGS := -trimpath
 LDFLAGS := -s -w -X main.version=$(VERSION)
 GOBUILD := CGO_ENABLED=0 go build $(GOFLAGS) -ldflags '$(LDFLAGS)'
 
-.PHONY: all vet test build binaries dist clean
+.PHONY: all vet test build binaries dist checksums clean
 
 all: vet test build
 
@@ -56,5 +56,12 @@ dist: binaries
 	git push -f origin $$commit:refs/heads/$(DIST_BRANCH); \
 	echo "published $(DIST_BRANCH) @ $(VERSION) ($$commit)"
 
+# SHA256 checksums for the release binaries — a GitHub Release asset so CI can verify a
+# pinned download (ADR 006). Run after `binaries`/`dist`; hashes the built binaries in
+# place, referencing bare filenames so `sha256sum -c` works from the download directory.
+checksums:
+	cd $(BINDIR) && sha256sum plumbline-* > SHA256SUMS
+	@cat $(BINDIR)/SHA256SUMS
+
 clean:
-	rm -f plumbline $(BINDIR)/plumbline-*
+	rm -f plumbline $(BINDIR)/plumbline-* $(BINDIR)/SHA256SUMS

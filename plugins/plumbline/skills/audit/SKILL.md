@@ -1,6 +1,6 @@
 ---
 name: audit
-description: Run the Plumbline engine over a repository and narrate the traceability scorecard — coverage, uncovered requirements, dead-ends, broken anchors and orphan code-areas — prioritising the weakest areas. Use when someone asks to audit, score, or check requirement↔code traceability, or how well a codebase is anchored.
+description: Run the Plumbline engine over a repository and narrate the traceability scorecard — coverage, uncovered requirements, dead-ends, zombie code, broken anchors, orphan code-areas and warnings — prioritising the weakest areas. Use when someone asks to audit, score, or check requirement↔code traceability, or how well a codebase is anchored.
 ---
 
 <!-- [impl->component~audit-skill~1] -->
@@ -42,6 +42,10 @@ to `onboard` and `maintain`.
      container that names no technology, is advisory and doesn't fail.)
    - **Broken anchors** (`broken`) — code points at a register ID that doesn't
      exist: a typo, or the item was renamed/removed. Outright wrong; cheap to fix.
+   - **Zombie code** (`zombies`, count `zombieCount`) — an anchor pointing at a
+     *rejected* requirement. The target exists but was rejected, so it's *not* a broken
+     anchor; it's a **hard fail** of its own — code for something the register says was
+     abandoned. Fix: remove the code, or un-reject the item if it's back in scope.
    - **Uncovered** (`uncovered`) — a documented item whose needed coverage
      nothing provides. The `missing` array lists which artifact types have no
      anchor and no covering register item.
@@ -58,6 +62,13 @@ to `onboard` and `maintain`.
      deeper.
    - **Orphan code-areas** (`orphans`) — source files carrying no anchor.
      Coarsely, code whose purpose isn't traced. Lowest priority, highest volume.
+
+   Then the **warnings** (`warnings`, count `warningCount`) — these are **surfaced, never
+   gate failures**, so report them but don't treat them as red. They flag *not-yet-approved*
+   items that already have code: `kind` is **build-ahead** (code for a `proposed`/`draft`
+   spec — reconcile when the spec firms up) or **status-lag** (fully covered → promote it to
+   `approved`). The hard fails are structural, broken, **zombie**, dead-end, and — under
+   strict gating — uncovered/transitive/orphan; a warning is a nudge, not a failure.
 
 5. **Prioritise the weakest areas.** Group orphans by directory to spot whole
    unanchored subsystems; follow each transitive defect down to the uncovered

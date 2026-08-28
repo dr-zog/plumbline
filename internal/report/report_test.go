@@ -191,3 +191,54 @@ func TestDeadEnd(t *testing.T) {
 		t.Errorf("plannedItems = %d, want 1 (the proposed item)", r.Summary.PlannedItems)
 	}
 }
+
+// TestGatePolicy checks ADR 004's maturity policy: code against a not-yet-approved
+// item is a warning (never a failure), and an anchor on a rejected item is zombie
+// code (a hard fail, distinct from a broken anchor).
+func TestGatePolicy(t *testing.T) {
+	// Status-lag: a proposed item fully covered — a warning, never a failure.
+	{
+		items := []register.Item{
+			{ID: "req~lag~1", Type: "req", Status: "proposed", Needs: []string{"component"}},
+			{ID: "component~lag~1", Type: "component", Covers: []string{"req~lag~1"}, Needs: []string{"impl"}},
+		}
+		anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~lag~1"}}
+		r := Build(items, anchors, []string{"a.go"}, 0)
+		if !r.Summary.OK {
+			t.Fatalf("status-lag must not fail the gate; got %+v", r.Summary)
+		}
+		if r.Summary.WarningCount != 1 || len(r.Warnings) != 1 || r.Warnings[0].Kind != "status-lag" {
+			t.Errorf("warnings = %+v, want one status-lag", r.Warnings)
+		}
+	}
+
+	// Build-ahead: a proposed item with shallow-but-not-deep coverage.
+	{
+		items := []register.Item{
+			{ID: "req~ba~1", Type: "req", Status: "proposed", Needs: []string{"component"}},
+			{ID: "component~ba~1", Type: "component", Status: "proposed", Covers: []string{"req~ba~1"}, Needs: []string{"impl"}},
+		}
+		r := Build(items, nil, nil, 0)
+		if !r.Summary.OK {
+			t.Fatalf("build-ahead must not fail the gate; got %+v", r.Summary)
+		}
+		if r.Summary.WarningCount != 1 || r.Warnings[0].Kind != "build-ahead" || r.Warnings[0].ID != "req~ba~1" {
+			t.Errorf("warnings = %+v, want one build-ahead on req~ba~1", r.Warnings)
+		}
+	}
+
+	// Zombie: an anchor on a rejected item — a hard fail, not a broken anchor.
+	{
+		items := []register.Item{
+			{ID: "req~gone~1", Type: "req", Status: "rejected", Needs: []string{"component"}},
+		}
+		anchors := []anchor.Anchor{{File: "z.go", Line: 3, Covering: "impl", TargetID: "req~gone~1", Raw: "[impl->req~gone~1]"}}
+		r := Build(items, anchors, []string{"z.go"}, 0)
+		if r.Summary.OK {
+			t.Fatal("zombie code must fail the gate")
+		}
+		if r.Summary.ZombieCount != 1 || r.Summary.BrokenCount != 0 {
+			t.Errorf("zombie=%d broken=%d, want 1 and 0 (not a broken anchor)", r.Summary.ZombieCount, r.Summary.BrokenCount)
+		}
+	}
+}

@@ -5,9 +5,10 @@
 // that Covers the item. Deep coverage additionally requires every covering
 // register item to be deeply covered itself — surfacing transitive defects.
 //
-// Item status governs tracing: rejected items are excluded entirely; approved
-// items (the default) are gated and scored; proposed/draft items are tracked and
-// surfaced as planned, but never fail the gate.
+// Item status governs tracing (see ADR 004): rejected items are excluded, and
+// code that anchors one is zombie code (a hard fail); approved items are gated
+// and scored; proposed/draft items are tracked, and code against them is a
+// warning (building ahead of approval), never a gate failure.
 //
 // The one report yields both a gate (OK / exit code) and a scorecard (coverage
 // and completeness percentages, gap counts) the skills narrate.
@@ -34,6 +35,8 @@ type Report struct {
 	Orphans    []Orphan        `json:"orphans"`
 	Structural []c4.Violation  `json:"structural"`
 	DeadEnds   []DeadEnd       `json:"deadEnds"`
+	Zombies    []Zombie        `json:"zombies"`
+	Warnings   []Warning       `json:"warnings"`
 	Planned    []Planned       `json:"planned"`
 }
 
@@ -54,7 +57,9 @@ type Summary struct {
 	OrphanCount      int     `json:"orphanCount"`
 	StructuralErrors int     `json:"structuralErrorCount"`
 	DeadEndCount     int     `json:"deadEndCount"`
-	MinCoverage      float64 `json:"minCoverage"` // gate threshold (0 = strict)
+	ZombieCount      int     `json:"zombieCount"`  // code anchoring a rejected item — fails
+	WarningCount     int     `json:"warningCount"` // build-ahead / status-lag — never fails
+	MinCoverage      float64 `json:"minCoverage"`  // gate threshold (0 = strict)
 	OK               bool    `json:"ok"`
 }
 
@@ -86,6 +91,16 @@ type Broken struct {
 	TargetID string `json:"targetId"`
 }
 
+// Zombie is an anchor pointing at a rejected item — code for a requirement the
+// register says was abandoned. The target exists but is rejected, so it's not a
+// broken anchor; it's a hard fail of its own (remove the code, or un-reject).
+type Zombie struct {
+	File     string `json:"file"`
+	Line     int    `json:"line"`
+	Tag      string `json:"tag"`
+	TargetID string `json:"targetId"`
+}
+
 // Orphan is a code-area — a directory of scanned source — carrying no anchor at
 // all. The anchor unit is the code-area (package / directory), one altitude up
 // from a symbol, so a single anchor in any file covers the whole area.
@@ -105,6 +120,18 @@ type DeadEnd struct {
 	Line  int    `json:"line"`
 }
 
+// Warning is a not-yet-approved item with code against it — surfaced, never a
+// gate failure. Kind is "build-ahead" (code for an unapproved spec) or
+// "status-lag" (fully covered but still unapproved → promote to approved).
+type Warning struct {
+	ID     string `json:"id"`
+	Title  string `json:"title,omitempty"`
+	Status string `json:"status"`
+	Kind   string `json:"kind"`
+	File   string `json:"file"`
+	Line   int    `json:"line"`
+}
+
 // Planned is a proposed or draft item: tracked and surfaced for the planned-vs-
 // realised view, but never gated. Realised is true when its chain already
 // resolves to code.
@@ -120,15 +147,17 @@ type Planned struct {
 // Build cross-checks anchors against register items and scanned source files.
 // minCoverage of 0 selects strict gating (any gap fails); a positive value
 // selects threshold gating (fail below that shallow-coverage percentage, but
-// broken anchors, structural errors and dead-ends always fail).
+// broken anchors, structural errors, dead-ends and zombie code always fail).
 func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string, minCoverage float64) Report {
-	// Status governs tracing: rejected items are excluded entirely (OFT); the rest
-	// are traced, but only approved items are gated and scored.
+	// Status governs tracing: rejected items are excluded from coverage (OFT), but
+	// remembered so code anchoring one reads as zombie code, not a broken anchor.
 	var traced []register.Item
 	rejected := 0
+	rejectedIDs := map[string]bool{}
 	for _, it := range items {
 		if it.Rejected() {
 			rejected++
+			rejectedIDs[it.ID] = true
 			continue
 		}
 		traced = append(traced, it)
@@ -139,10 +168,16 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 		byID[it.ID] = it
 	}
 
-	// Anchors that resolve contribute a covering type; the rest are broken.
+	// Anchors that resolve contribute a covering type; an anchor on a rejected item
+	// is zombie code; the rest are broken.
 	anchorTypes := make(map[string]map[string]bool)
 	var broken []Broken
+	var zombies []Zombie
 	for _, a := range anchors {
+		if rejectedIDs[a.TargetID] {
+			zombies = append(zombies, Zombie{File: a.File, Line: a.Line, Tag: a.Raw, TargetID: a.TargetID})
+			continue
+		}
 		if _, ok := byID[a.TargetID]; !ok {
 			broken = append(broken, Broken{File: a.File, Line: a.Line, Tag: a.Raw, TargetID: a.TargetID})
 			continue
@@ -202,6 +237,7 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 	var uncovered []Uncovered
 	var transitive []TransitiveGap
 	var deadEnds []DeadEnd
+	var warnings []Warning
 	var planned []Planned
 	shallowCount, deepCount, approvedCount := 0, 0, 0
 
@@ -215,13 +251,23 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 		isShallow := len(missing) == 0
 		isDeep := isShallow && deep(it)
 
-		// Proposed/draft: tracked and surfaced for the burndown, but never a gap
-		// and never scored — you designed it, you haven't promised it yet.
+		// Proposed/draft: tracked, never gated. Code against one is a warning —
+		// building ahead of approval (status-lag once fully covered) — not a gap.
 		if it.Planned() {
 			planned = append(planned, Planned{
 				ID: it.ID, Title: it.Title, Status: it.StatusOrDefault(),
 				Realised: isDeep, File: it.File, Line: it.Line,
 			})
+			if metNeeds := len(it.Needs) - len(missing); metNeeds > 0 {
+				kind := "build-ahead"
+				if isDeep {
+					kind = "status-lag" // fully built but unapproved → promote to approved
+				}
+				warnings = append(warnings, Warning{
+					ID: it.ID, Title: it.Title, Status: it.StatusOrDefault(),
+					Kind: kind, File: it.File, Line: it.Line,
+				})
+			}
 			continue
 		}
 
@@ -281,12 +327,19 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 	sort.Slice(uncovered, func(i, j int) bool { return uncovered[i].ID < uncovered[j].ID })
 	sort.Slice(transitive, func(i, j int) bool { return transitive[i].ID < transitive[j].ID })
 	sort.Slice(deadEnds, func(i, j int) bool { return deadEnds[i].ID < deadEnds[j].ID })
+	sort.Slice(warnings, func(i, j int) bool { return warnings[i].ID < warnings[j].ID })
 	sort.Slice(planned, func(i, j int) bool { return planned[i].ID < planned[j].ID })
 	sort.Slice(broken, func(i, j int) bool {
 		if broken[i].File != broken[j].File {
 			return broken[i].File < broken[j].File
 		}
 		return broken[i].Line < broken[j].Line
+	})
+	sort.Slice(zombies, func(i, j int) bool {
+		if zombies[i].File != zombies[j].File {
+			return zombies[i].File < zombies[j].File
+		}
+		return zombies[i].Line < zombies[j].Line
 	})
 	sort.Slice(orphans, func(i, j int) bool { return orphans[i].Area < orphans[j].Area })
 
@@ -297,6 +350,8 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 		Orphans:    orphans,
 		Structural: structural,
 		DeadEnds:   deadEnds,
+		Zombies:    zombies,
+		Warnings:   warnings,
 		Planned:    planned,
 		Summary: Summary{
 			RegisterItems:    len(traced),
@@ -314,6 +369,8 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 			OrphanCount:      len(orphans),
 			StructuralErrors: structuralErrors,
 			DeadEndCount:     len(deadEnds),
+			ZombieCount:      len(zombies),
+			WarningCount:     len(warnings),
 			MinCoverage:      minCoverage,
 		},
 	}
@@ -348,12 +405,12 @@ func weakCoverers(it register.Item, coverers map[string][]register.Item, deep fu
 	return out
 }
 
-// gate decides the pass/fail. Broken anchors, structural errors and dead-ends
-// always fail. Otherwise: threshold mode fails below minCoverage; strict mode
-// fails on any gap. Only approved items reach the gap lists, so proposed/draft
-// items never fail it.
+// gate decides the pass/fail. Broken anchors, structural errors, dead-ends and
+// zombie code always fail. Otherwise: threshold mode fails below minCoverage;
+// strict mode fails on any gap. Warnings never fail; only approved items reach
+// the gap lists, so proposed/draft items never fail it.
 func gate(s Summary, minCoverage float64) bool {
-	if s.BrokenCount > 0 || s.StructuralErrors > 0 || s.DeadEndCount > 0 {
+	if s.BrokenCount > 0 || s.StructuralErrors > 0 || s.DeadEndCount > 0 || s.ZombieCount > 0 {
 		return false
 	}
 	if minCoverage > 0 {

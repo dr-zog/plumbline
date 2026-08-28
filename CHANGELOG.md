@@ -26,6 +26,10 @@ release — never generated from commit messages.
   gate as a dead-end, instead of reading as vacuous 100% coverage. Proposed/draft items with
   no `Needs` are unaffected; the `audit` and `maintain` skills are updated to match.
   (Closes #1; ADR 004.)
+- Maturity gate policy (ADR 004): code against a not-yet-approved (`proposed`/`draft`) item
+  is surfaced as a **warning** — build-ahead, or status-lag when fully covered — never a gate
+  failure; and an anchor pointing at a `rejected` item is **zombie code**, a hard fail
+  distinct from a broken anchor. The `audit` and `maintain` skills narrate both. (Part of #8.)
 
 ### Changed
 - CI: the changelog gate now requires an entry on **every** PR — the `skip-changelog`

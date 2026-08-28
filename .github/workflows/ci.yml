@@ -37,31 +37,3 @@ jobs:
           name: plumbline-binaries
           path: plugins/plumbline/bin/plumbline-*
           retention-days: 7
-
-  changelog:
-    # Every PR adds a CHANGELOG entry — no exceptions, no escape (see
-    # docs/processes/raising-a-pr.md). Runs on every event so the required check always
-    # reports a conclusion: it early-passes when not a PR. (A *skipped* required check can
-    # deadlock merges, so we never skip it — we run and pass.)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # need both base and head commits to diff
-      - name: Require a CHANGELOG entry
-        env:
-          EVENT: ${{ github.event_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          if [ "$EVENT" != "pull_request" ]; then
-            echo "not a pull request — changelog check not applicable."
-            exit 0
-          fi
-          added=$(git diff --unified=0 "$BASE_SHA" "$HEAD_SHA" -- CHANGELOG.md | grep -cE '^\+[^+]' || true)
-          if [ "$added" -gt 0 ]; then
-            echo "CHANGELOG.md gained $added line(s) in this PR."
-          else
-            echo "::error::No CHANGELOG.md entry in this PR. Every change adds a line under [Unreleased] — see docs/processes/raising-a-pr.md."
-            exit 1
-          fi

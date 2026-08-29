@@ -45,3 +45,4 @@ Sources and evidence behind the decision, so it can be re-checked.
 - [004 — Requirement status lifecycle](004-requirement-status-lifecycle.md)
 - [005 — Automated releases via semantic-release](005-automated-releases-semantic-release.md)
 - [006 — GitHub Release binaries for pinned consumption](006-release-binaries-for-ci.md)
+- [007 — Coverage-aware dead-ends; the architecture axis is first-class](007-coverage-aware-dead-ends.md)

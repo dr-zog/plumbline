@@ -43,6 +43,17 @@ container is realised from below; without it a container has nothing covering it
 `approved` (it reads as uncovered). A `context` is likewise realised by its containers — and a
 top-of-axis node covered from below needs no `Needs` of its own to be covered (ADR 007).
 
+**One edge, two meanings.** The two axes use the same `Covers` edge for two different
+relationships — a deliberate C4 + OFT fusion. On the **requirements axis**
+(`impl → component → req → feat`), `Covers` is OFT's classic *fulfilment*: the coverer
+*satisfies* what it points at. On the **architecture axis**
+(`impl → component → container → context`), it records C4 *containment* instead: a component
+is *part of* its container, realising it by aggregation, so a container is "covered" once its
+constituent components are present. Both are legal OFT (the type ladder is configurable) and
+faithful to C4's taxonomy — but note the shift: on the architecture axis
+`Covers: container~Y~1` reads as "belongs to / helps realise", not "satisfies". Coming from
+pure OFT, that's the one place `Covers` means something broader than you'd expect.
+
 ## Register grammar
 
 The register is OFT-native Markdown (`register.md` by default). A specification item

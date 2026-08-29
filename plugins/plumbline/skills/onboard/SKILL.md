@@ -62,11 +62,14 @@ Write each level into the register as you settle it — a single `register.md` f
 small project, or a `register/` directory split by level (and, at scale, by
 container) as it grows; Plumbline aggregates every `.md` into one register either way.
 
-As you go, wire the chain with `Covers`/`Needs`: a `component` Covers the `req` it
-realises, a `req` Covers its `feat`, a `container` Covers the `context`. The engine
-validates these against the locked ladder, so a mis-wired link is caught immediately.
-Every `approved` item must declare a downward `Needs` — an approved item with no `Needs` is
-a **dead-end** (a hard fail), so wire it before you approve it.
+As you go, wire the chain with `Covers`/`Needs`, minding that **both axes meet at the
+`component`**: a `component` Covers **both** the `req` it realises (requirements axis) **and**
+its `container` (architecture axis — a container is realised, and only then approvable, by the
+components that cover it); a `req` Covers its `feat`; a `container` Covers the `context`. The
+engine validates these against the locked ladder, so a mis-wired link is caught immediately.
+An `approved` item that declares no `Needs` **and** has nothing covering it is a **dead-end**
+(a hard fail); a top-of-axis node covered from below — a `context` its containers cover — is
+fine without `Needs` (ADR 007). Wire the chain before you approve.
 
 ## Place the anchors — adaptively
 

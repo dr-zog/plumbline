@@ -36,6 +36,13 @@ architecture:   context ─▶ container ──┘              (code anchors)
 only valid because a `req` may `Need` a `component`. The engine enforces this, so a
 back-to-front or skip-a-level link is reported as a structural error.
 
+**Both axes meet at the `component`.** A component covers *two* things — the `req` it
+realises (requirements axis) **and** the `container` it lives in (architecture axis), e.g.
+`Covers: container~engine~1, req~parse-input~1`. That `component → container` edge is how a
+container is realised from below; without it a container has nothing covering it and can't be
+`approved` (it reads as uncovered). A `context` is likewise realised by its containers — and a
+top-of-axis node covered from below needs no `Needs` of its own to be covered (ADR 007).
+
 ## Register grammar
 
 The register is OFT-native Markdown (`register.md` by default). A specification item

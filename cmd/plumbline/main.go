@@ -184,7 +184,11 @@ func writeText(w io.Writer, r report.Report) {
 		fmt.Fprintf(w, "UNCOVERED (%d) — needed coverage with nothing to provide it:\n", len(r.Uncovered))
 		fmt.Fprint(w, "  → fix: anchor a code-area to each item, or retire the item from the register if it's no longer required.\n")
 		for _, u := range r.Uncovered {
-			fmt.Fprintf(w, "  %s%s  missing: %s  (%s:%d)\n", u.ID, titleOf(u.Title), strings.Join(u.Missing, ","), u.File, u.Line)
+			missing := strings.Join(u.Missing, ",")
+			fmt.Fprintf(w, "  %s%s  missing: %s  (%s:%d)\n", u.ID, titleOf(u.Title), missing, u.File, u.Line)
+			if strings.HasPrefix(u.ID, "container~") && strings.Contains(missing, "component") {
+				fmt.Fprintf(w, "      → hint: a container is realised by its components — each must declare `Covers: %s` (the architecture axis; ADR 007).\n", u.ID)
+			}
 		}
 		fmt.Fprintln(w)
 	}

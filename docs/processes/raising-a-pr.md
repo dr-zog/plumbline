@@ -23,6 +23,13 @@ choose the type deliberately, because it *is* the release decision:
 - `fix:` → patch · `feat:` → minor · a `!` (or a `BREAKING CHANGE:` footer) → major.
 - `docs:` / `ci:` / `chore:` / `refactor:` / `test:` → no release.
 
+**A skill is code, not docs.** The discriminator is *role*, not file extension: anything
+under `plugins/plumbline/**` **ships** to consumers — a skill's `.md` *is* the plugin's
+behaviour when an AI loads it — so a change there is `fix`/`feat` and **must release**, even
+though it's Markdown. `docs:` is only for repo-internal explanation that ships nothing:
+`README.md`, `DESIGN.md`, `docs/`, ADRs. When a PR touches both, the shipped change wins the
+type.
+
 The `pr-title` check lints this. The summary is user-facing — it lands in the release notes —
 so write it for a reader, not as a diff of files.
 

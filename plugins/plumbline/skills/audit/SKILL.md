@@ -62,12 +62,14 @@ to `onboard` and `maintain`.
      nothing provides. The `missing` array lists which artifact types have no
      anchor and no covering register item.
    - **Dead-ends** (`deadEnds`, count `deadEndCount`) — an *approved* item that declares
-     no `Needs` at all. In the locked ladder every register-item type must need something
-     below it, so this can never be covered; it's a **hard fail** (like broken/structural,
-     it fails regardless of any coverage threshold), and the engine excludes it from the
-     covered count so it can't fake a green score. Fix: give it a `Needs` edge down the
-     ladder, or set it to a lower status (`proposed`/`draft`) if it isn't a committed
-     requirement yet.
+     no `Needs` **and** has no coverers: nothing realises it from below, so it can never be
+     covered. It's a **hard fail** (like broken/structural, it fails regardless of any
+     coverage threshold), and the engine excludes it from the covered count so it can't fake
+     a green score. A no-`Needs` item that *is* covered from below — a top-of-axis `context`
+     its containers cover — is **not** a dead-end; it's scored through its coverers (ADR 007).
+     Fix a real dead-end by giving it a `Needs` edge down the ladder, wiring a coverer to it,
+     or setting it to a lower status (`proposed`/`draft`) if it isn't a committed requirement
+     yet.
    - **Transitive defects** (`transitiveDefects`) — an item whose *direct* needs
      are met, but a coverer further down the chain isn't itself covered
      (`weakCoverers` names them). Coverage looks fine one level up; the hole is

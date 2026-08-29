@@ -121,11 +121,14 @@ type Orphan struct {
 	Area string `json:"area"`
 }
 
-// DeadEnd is an approved item that declares no Needs. In the locked ladder every
-// register-item type must need something below it, so an empty Needs terminates
-// the chain prematurely — it can never be genuinely covered, and would otherwise
-// read as vacuously complete and inflate the score. Only approved items qualify;
-// a proposed/draft item without Needs is legitimately not-yet-armed.
+// DeadEnd is an approved item that declares no Needs AND has no coverers. In the
+// locked ladder every register-item type must need something below it, so an empty
+// Needs terminates the chain prematurely — and with nothing covering it from below,
+// nothing realises it, so it can never be genuinely covered and would otherwise read
+// as vacuously complete and inflate the score. A no-Needs item that IS covered from
+// below is a top-of-axis node (e.g. a context its containers cover), scored through its
+// coverers — not a dead-end (ADR 007). Only approved items qualify; a proposed/draft
+// item without Needs is legitimately not-yet-armed.
 type DeadEnd struct {
 	ID    string `json:"id"`
 	Title string `json:"title,omitempty"`
@@ -235,11 +238,24 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 			return false // defensive: ladder is acyclic, but never loop
 		}
 		visiting[it.ID] = true
-		res := true
-		for _, need := range it.Needs {
-			if !needMetDeep(it.ID, need, anchorTypes, coverers, deep) {
-				res = false
-				break
+		var res bool
+		if len(it.Needs) == 0 {
+			// No downward Needs: a top-of-axis node covered from below — deep iff a
+			// coverer is itself deep. With no coverers it is a dead-end (gated
+			// elsewhere) and not deep; never vacuously deep (ADR 007).
+			for _, y := range coverers[it.ID] {
+				if deep(y) {
+					res = true
+					break
+				}
+			}
+		} else {
+			res = true
+			for _, need := range it.Needs {
+				if !needMetDeep(it.ID, need, anchorTypes, coverers, deep) {
+					res = false
+					break
+				}
 			}
 		}
 		visiting[it.ID] = false
@@ -296,9 +312,11 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 
 		// Approved: gated as normal, and the basis for the scores.
 		approvedCount++
-		if len(it.Needs) == 0 {
-			// A dead-end: an approved item that declares no downward need. It can
-			// never be genuinely covered, so it's a gap — not a vacuous 100%.
+		if len(it.Needs) == 0 && len(coverers[it.ID]) == 0 {
+			// A dead-end: an approved item with no downward Needs AND nothing covering
+			// it from below — nothing realises it, so it can never be genuinely covered
+			// (not a vacuous 100%). A no-Needs item that IS covered is a top-of-axis
+			// node, scored through its coverers below — not a dead-end (ADR 007).
 			deadEnds = append(deadEnds, DeadEnd{ID: it.ID, Title: it.Title, File: it.File, Line: it.Line})
 			continue
 		}

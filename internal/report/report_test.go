@@ -192,6 +192,56 @@ func TestDeadEnd(t *testing.T) {
 	}
 }
 
+// TestDeadEndCoverageAware checks ADR 007: an approved item with no Needs is a
+// dead-end only when nothing covers it. A top-of-axis node covered from below is
+// scored through its coverers, not flagged.
+func TestDeadEndCoverageAware(t *testing.T) {
+	// A context with no Needs, covered from below by a fully-deep chain.
+	deepChain := []register.Item{
+		{ID: "context~sys~1", Type: "context", Status: "approved"}, // no Needs, covered below
+		{ID: "container~svc~1", Type: "container", Status: "approved", Covers: []string{"context~sys~1"}, Needs: []string{"component"}},
+		{ID: "component~w~1", Type: "component", Status: "approved", Covers: []string{"container~svc~1"}, Needs: []string{"impl"}},
+	}
+	anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~w~1"}}
+	r := Build(deepChain, anchors, []string{"a.go"}, GateOpts{})
+	if !r.Summary.OK {
+		t.Fatalf("a context covered from below must not fail; summary %+v deadEnds %+v", r.Summary, r.DeadEnds)
+	}
+	if r.Summary.DeadEndCount != 0 {
+		t.Errorf("deadEndCount = %d, want 0 (a covered top-node is not a dead-end)", r.Summary.DeadEndCount)
+	}
+	if r.Summary.ShallowCovered != 3 || r.Summary.DeepCovered != 3 {
+		t.Errorf("shallow=%d deep=%d, want 3 and 3 (context scored through its coverers)", r.Summary.ShallowCovered, r.Summary.DeepCovered)
+	}
+
+	// Same context, but its container is not itself covered → context is a transitive
+	// defect (shallow but not deep), still NOT a dead-end.
+	weakChain := []register.Item{
+		{ID: "context~sys~1", Type: "context", Status: "approved"},
+		{ID: "container~svc~1", Type: "container", Status: "approved", Covers: []string{"context~sys~1"}, Needs: []string{"component"}}, // uncovered
+	}
+	r = Build(weakChain, nil, nil, GateOpts{})
+	if r.Summary.DeadEndCount != 0 {
+		t.Errorf("weak-chain: deadEndCount = %d, want 0 (context has a coverer)", r.Summary.DeadEndCount)
+	}
+	if r.Summary.OK {
+		t.Fatal("weak-chain must fail (container uncovered, context transitive)")
+	}
+	if r.Summary.ShallowCovered != 1 || r.Summary.DeepCovered != 0 {
+		t.Errorf("weak-chain: shallow=%d deep=%d, want 1 and 0 (context shallow via its coverer, not deep)", r.Summary.ShallowCovered, r.Summary.DeepCovered)
+	}
+	if r.Summary.UncoveredCount != 1 || len(r.Uncovered) != 1 || r.Uncovered[0].ID != "container~svc~1" {
+		t.Errorf("weak-chain: uncovered = %+v, want [container~svc~1]", r.Uncovered)
+	}
+
+	// A top-of-axis node with no Needs AND no coverers is still a dead-end.
+	terminal := []register.Item{{ID: "context~alone~1", Type: "context", Status: "approved"}}
+	r = Build(terminal, nil, nil, GateOpts{})
+	if r.Summary.DeadEndCount != 1 || len(r.DeadEnds) != 1 || r.DeadEnds[0].ID != "context~alone~1" {
+		t.Errorf("terminal: deadEnds = %+v, want [context~alone~1]", r.DeadEnds)
+	}
+}
+
 // TestGatePolicy checks ADR 004's maturity policy: code against a not-yet-approved
 // item is a warning (never a failure), and an anchor on a rejected item is zombie
 // code (a hard fail, distinct from a broken anchor).

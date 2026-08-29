@@ -92,8 +92,9 @@ package-level doc comment or a designated file.
 
 1. Run `plumbline -json` and read what it flags. Everything traceable to *this*
    change is yours to clear: broken anchors you introduced, orphans you added,
-   items your change left uncovered, any **dead-end** (an approved item with no `Needs` —
-   give it a `Needs` edge, or a lower status), and any **zombie code** (an anchor left on a
+   items your change left uncovered, any **dead-end** (an approved item with no `Needs` *and*
+   no coverer — give it a `Needs` edge, wire a coverer, or drop it to a lower status), and any
+   **zombie code** (an anchor left on a
    `rejected` item — remove the code, or un-reject the item). **Warnings** — build-ahead or
    status-lag on a not-yet-approved item you touched — don't fail the build; reconcile them
    by promoting a finished item to `approved`, but they're a nudge, not a blocker.

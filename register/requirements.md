@@ -182,8 +182,11 @@ Needs: component
 `req~dead-end-detection~1`
 Status: approved
 
-Flag an approved item that declares no `Needs` — a dead-end in the locked ladder, which can
-never be genuinely covered. It fails the gate rather than reading as vacuously complete.
+Flag an approved item that declares no `Needs` **and has no coverers** — a genuine dead-end
+in the locked ladder: nothing realises it from below, so it can never be covered, and it
+fails the gate rather than reading as vacuously complete. An item covered from below (a
+top-of-axis node) is *not* a dead-end even with no `Needs`; it is scored through its coverers
+(ADR 007).
 
 Covers: feat~bidirectional-audit~1
 Needs: component

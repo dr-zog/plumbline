@@ -1,0 +1,41 @@
+#!/bin/sh
+# Plumbline engine launcher.
+#
+# Dispatches to the per-platform engine binary sitting next to this script,
+# chosen from the host's OS/arch. Callers invoke this one path — inside Claude
+# Code that's ${CLAUDE_PLUGIN_ROOT}/bin/plumbline — and never worry about which
+# platform they're on. The per-platform binaries ship with the plugin (they are
+# gitignored in source; the release flow bundles them — see docs/adrs/001).
+set -eu
+
+dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+os=$(uname -s)
+case "$os" in
+	Linux) os=linux ;;
+	Darwin) os=darwin ;;
+	MINGW* | MSYS* | CYGWIN* | Windows_NT) os=windows ;;
+	*)
+		echo "plumbline: unsupported OS: $os" >&2
+		exit 3
+		;;
+esac
+
+arch=$(uname -m)
+case "$arch" in
+	x86_64 | amd64) arch=amd64 ;;
+	arm64 | aarch64) arch=arm64 ;;
+esac
+
+case "$os" in
+	darwin) bin="$dir/plumbline-darwin-universal" ;;   # one fat binary for both arches
+	windows) bin="$dir/plumbline-windows-amd64.exe" ;; # amd64 runs under emulation on ARM
+	*) bin="$dir/plumbline-$os-$arch" ;;
+esac
+
+if [ ! -x "$bin" ]; then
+	echo "plumbline: no engine binary for $os/$arch at $bin" >&2
+	exit 3
+fi
+
+exec "$bin" "$@"

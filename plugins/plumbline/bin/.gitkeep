@@ -1,0 +1,2 @@
+# Committed per-platform engine binaries land here (CI cross-compiles them in
+# Stage 2). This file keeps the directory present until then.

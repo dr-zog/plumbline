@@ -145,7 +145,8 @@ coverage across the chain, and emits a **bidirectional report**:
 - **uncovered** — a documented item nothing provides coverage for;
 - **transitive defects** — direct needs met, but a coverer below isn't;
 - **broken anchors** — a tag whose target isn't in the register;
-- **orphan code-areas** — scanned source files carrying no anchor;
+- **orphan code-areas** — directories of scanned source with no anchor (an anchor
+  covers its whole directory, so this is per code-area, not per file);
 - **structural** — register violations of the C4 ladder.
 
 It exits non-zero on any gap, so it doubles as a pre-commit / CI gate with no LLM
@@ -160,20 +161,25 @@ Plumbline traceability report
   coverage       : 4/5 items (80.0%)   [direct needs met]
   completeness   : 3/5 items (60.0%)   [whole chain resolves]
   gate           : strict — any gap fails
+  measures       : traceability, not design quality — a green gate is not a verdict on your architecture
 
 UNCOVERED (1) — needed coverage with nothing to provide it:
-  req~rotate-signing-keys~1 — Rotate signing keys  missing: component  (…register.md:35)
+  → fix: anchor a code-area to each item, or retire the item from the register if it's no longer required.
+  req~rotate-signing-keys~1 — Rotate signing keys  missing: component  (testdata/fixture/register.md:38)
 
 TRANSITIVE DEFECTS (1) — direct needs met, but a coverer below isn't:
-  feat~key-management~1 — Key management  weak: req~rotate-signing-keys~1  (…register.md:18)
+  → fix: cover the weak item(s) named below so the whole chain resolves.
+  feat~key-management~1 — Key management  weak: req~rotate-signing-keys~1  (testdata/fixture/register.md:19)
 
 BROKEN anchors (1) — tag target not in register:
-  [impl->component~does-not-exist~1]  (…src/broken.go:6)
+  → fix: add the target to the register, or point the tag at an existing item.
+  [impl->component~does-not-exist~1]  (testdata/fixture/src/broken.go:6)
 
-ORPHAN code-areas (1) — source files with no anchor:
-  testdata/fixture/src/orphan.go
+ORPHAN code-areas (1) — directories with no anchor:
+  → fix: add an anchor in each directory (pointing at the component it implements), or exclude it in plumbline.json.
+  testdata/fixture/src/orphan
 
-FAIL — 0 structural error(s), 1 uncovered, 1 transitive, 1 broken, 1 orphan.
+FAIL — 4/5 items covered; still to clear: 1 uncovered, 0 dead-end, 0 zombie, 1 transitive, 1 broken, 1 orphan, 0 structural.
 $ echo $?
 1
 ```

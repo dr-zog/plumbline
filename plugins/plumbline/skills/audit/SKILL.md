@@ -74,8 +74,10 @@ to `onboard` and `maintain`.
      are met, but a coverer further down the chain isn't itself covered
      (`weakCoverers` names them). Coverage looks fine one level up; the hole is
      deeper.
-   - **Orphan code-areas** (`orphans`) — source files carrying no anchor.
-     Coarsely, code whose purpose isn't traced. Lowest priority, highest volume.
+   - **Orphan code-areas** (`orphans`) — **directories** of scanned source with no
+     anchor. Detection is per code-area: one anchor covers its whole directory, so an
+     un-anchored file beside an anchored one is *not* an orphan. Coarsely, code whose
+     purpose isn't traced — lowest priority, cleared last.
 
    Then the **warnings** (`warnings`, count `warningCount`) — these are **surfaced, never
    gate failures**, so report them but don't treat them as red. They flag *not-yet-approved*
@@ -86,8 +88,8 @@ to `onboard` and `maintain`.
    item defaults to `proposed`, so an un-statused requirement shows as planned/warning, not
    gated — ADR 004.)
 
-5. **Prioritise the weakest areas.** Group orphans by directory to spot whole
-   unanchored subsystems; follow each transitive defect down to the uncovered
+5. **Prioritise the weakest areas.** Each orphan is a whole directory, so they point
+   straight at unanchored subsystems; follow each transitive defect down to the uncovered
    leaf that causes it (fixing the leaf clears the chain). Recommend the smallest
    next step, and hand off to `maintain`/`onboard` for the actual edits.
 

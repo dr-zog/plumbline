@@ -263,6 +263,39 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 		return res
 	}
 
+	// hasCode is memoised: true iff real code — an anchor — exists anywhere in the
+	// item's coverage subtree, i.e. the item is directly anchored or something that
+	// Covers it (transitively) is. This keeps a planned-item warning honest:
+	// "build-ahead" and "status-lag" both assert that code exists for a not-yet-
+	// approved spec (ADR 004), so a proposed item merely covered by another register
+	// item with no anchor beneath it must NOT warn — it is un-built spec, not code
+	// running ahead of approval (#43). (isDeep implies hasCode, since deep coverage
+	// bottoms out at anchors and is never vacuously deep — ADR 007.)
+	codeMemo := make(map[string]bool)
+	codeVisiting := make(map[string]bool)
+	var hasCode func(id string) bool
+	hasCode = func(id string) bool {
+		if v, ok := codeMemo[id]; ok {
+			return v
+		}
+		if codeVisiting[id] {
+			return false // defensive: the ladder is acyclic, but never loop
+		}
+		codeVisiting[id] = true
+		res := len(anchorTypes[id]) > 0
+		if !res {
+			for _, y := range coverers[id] {
+				if hasCode(y.ID) {
+					res = true
+					break
+				}
+			}
+		}
+		codeVisiting[id] = false
+		codeMemo[id] = res
+		return res
+	}
+
 	var uncovered []Uncovered
 	var transitive []TransitiveGap
 	var deadEnds []DeadEnd
@@ -290,14 +323,16 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 			}
 		}
 
-		// Proposed/draft: tracked, never gated. Code against one is a warning —
-		// building ahead of approval (status-lag once fully covered) — not a gap.
+		// Proposed/draft: tracked, never gated. Real code (an anchor in its coverage
+		// subtree) against one is a warning — building ahead of approval (status-lag
+		// once fully covered) — not a gap. A bare register coverer with no code
+		// beneath it is not "building ahead"; it is just un-built spec (#43).
 		if it.Planned() {
 			planned = append(planned, Planned{
 				ID: it.ID, Title: it.Title, Status: it.StatusOrDefault(),
 				Realised: isDeep, File: it.File, Line: it.Line,
 			})
-			if metNeeds := len(it.Needs) - len(missing); metNeeds > 0 {
+			if hasCode(it.ID) {
 				kind := "build-ahead"
 				if isDeep {
 					kind = "status-lag" // fully built but unapproved → promote to approved

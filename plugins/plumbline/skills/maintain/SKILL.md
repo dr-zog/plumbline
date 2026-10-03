@@ -72,6 +72,11 @@ A requirement's `Status` is its maturity, and it moves as the work does (ADR 004
   committed part of what you're shipping, `proposed` if it's designed-ahead and not yet built.
 - **Dropping a requirement** — set it `rejected` (and remove its anchored code, or the engine
   reports **zombie code**). Don't silently delete it; the rejection is part of the record.
+  **Record *why* in its description** — what superseded it, or why it went — because
+  `rejected` is *current state, not a permanent verdict*: it means "no code should point here
+  now," not "never again." A withdrawn feature that later returns is just `rejected` →
+  `approved`, re-anchored. That one-line note is what stops the next reader misreading a
+  temporary withdrawal as a final no.
 
 A bare item defaults to `proposed`, so if you add a requirement you *are* committing to, say
 `Status: approved` explicitly — otherwise the gate won't enforce it.

@@ -80,7 +80,10 @@ Needs: impl
   `proposed`** (provisional — tracked, but *not* gated), so mark a committed requirement
   `Status: approved` for the gate to enforce it. `proposed`/`draft` with code raises a
   warning (build-ahead); `rejected` is excluded, and code anchoring a `rejected` item is
-  zombie code (a hard fail). See ADR 004.
+  zombie code (a hard fail). When you reject an item, note *why* in its description:
+  `rejected` is *current state* — code for it is a defect **now** — not a permanent verdict,
+  and it reverts to `approved` if the feature returns, so the note keeps the next reader from
+  reading a withdrawal as "never again." See ADR 004.
 - **Revisions** — when an item's *meaning* changes, bump the revision rather than
   editing in place. This is OFT semantics: it invalidates stale links so coverers
   know to re-check. A typo fix does not warrant a bump.

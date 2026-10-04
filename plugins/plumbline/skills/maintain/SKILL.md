@@ -66,8 +66,10 @@ A requirement's `Status` is its maturity, and it moves as the work does (ADR 004
 
 - **Building a `proposed`/`draft` requirement** — leave the status as-is; code against it is
   an expected **build-ahead** warning, not a failure.
-- **Finishing and committing to it** — promote it to `Status: approved`. That clears the
-  **status-lag** warning, and from now on the gate holds it: it must stay covered.
+- **Finishing and committing to it** — promote it to `Status: approved` once the engine says
+  **status-lag** (fully built: every coverer beneath it built, ADR 009). That clears the warning,
+  and from now on the gate holds it: it must stay covered. If it still reads build-ahead, check
+  its `unbuiltCoverers` — something under it isn't built yet, so it isn't ready to promote.
 - **A new requirement in this change** — set its status deliberately: `approved` if it's a
   committed part of what you're shipping, `proposed` if it's designed-ahead and not yet built.
 - **Dropping a requirement** — set it `rejected` (and remove its anchored code, or the engine

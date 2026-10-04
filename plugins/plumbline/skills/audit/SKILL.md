@@ -42,9 +42,11 @@ to `onboard` and `maintain`.
    `approved` (committed), with `rejected` abandoned. The summary carries `approvedItems`
    (gated, the basis for the two scores), `plannedItems` (`proposed`/`draft` — tracked, not
    gated) and `rejectedItems` (excluded). The `planned` array is the planned-vs-realised
-   **burndown**: each entry's `realised` says whether that not-yet-approved item's chain
-   already resolves to code. Narrate it as *"N approved (X% realised), M planned, K
-   rejected"* so the developer sees committed vs designed-ahead at a glance.
+   **burndown**: each entry's `realised` says whether that not-yet-approved item is **fully
+   built** — every coverer beneath it, recursively, resolves to code (ADR 009) — and
+   `unbuiltCoverers` names the ones that don't yet. Narrate it as *"N approved (X% realised),
+   M planned, K rejected"* so the developer sees committed vs designed-ahead at a glance, and
+   name the unbuilt coverers for any partially-built planned item.
 
    Then walk the gaps in priority order:
    - **Structural errors** (`structural`, severity `error`) — first. The register
@@ -82,9 +84,11 @@ to `onboard` and `maintain`.
    Then the **warnings** (`warnings`, count `warningCount`) — these are **surfaced, never
    gate failures**, so report them but don't treat them as red. They flag *not-yet-approved*
    items that already have code: `kind` is **build-ahead** (code for a `proposed`/`draft`
-   spec — reconcile when the spec firms up) or **status-lag** (fully covered → promote it to
-   `approved`). The hard fails are structural, broken, **zombie**, dead-end, and — under
-   strict gating — uncovered/transitive/orphan; a warning is a nudge, not a failure. (A bare
+   spec — reconcile when the spec firms up) or **status-lag** (fully built — *every* coverer,
+   not just one per type — so promote it to `approved`). Only status-lag is a promote signal;
+   never advise promoting a build-ahead item, which still has unbuilt coverers. The hard
+   fails are structural, broken, **zombie**, dead-end, and — under strict gating —
+   uncovered/transitive/orphan; a warning is a nudge, not a failure. (A bare
    item defaults to `proposed`, so an un-statused requirement shows as planned/warning, not
    gated — ADR 004.)
 

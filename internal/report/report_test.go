@@ -262,18 +262,20 @@ func TestGatePolicy(t *testing.T) {
 		}
 	}
 
-	// Build-ahead: a proposed item with shallow-but-not-deep coverage.
+	// Build-ahead: a proposed item with real code but not-yet-complete coverage —
+	// its impl is anchored, a needed test type is still missing. Code exists, so it
+	// is genuinely building ahead of approval (contrast TestBuildAheadRequiresCode).
 	{
 		items := []register.Item{
-			{ID: "req~ba~1", Type: "req", Status: "proposed", Needs: []string{"component"}},
-			{ID: "component~ba~1", Type: "component", Status: "proposed", Covers: []string{"req~ba~1"}, Needs: []string{"impl"}},
+			{ID: "component~ba~1", Type: "component", Status: "proposed", Needs: []string{"impl", "utest"}},
 		}
-		r := Build(items, nil, nil, GateOpts{})
+		anchors := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~ba~1"}}
+		r := Build(items, anchors, []string{"a.go"}, GateOpts{})
 		if !r.Summary.OK {
 			t.Fatalf("build-ahead must not fail the gate; got %+v", r.Summary)
 		}
-		if r.Summary.WarningCount != 1 || r.Warnings[0].Kind != "build-ahead" || r.Warnings[0].ID != "req~ba~1" {
-			t.Errorf("warnings = %+v, want one build-ahead on req~ba~1", r.Warnings)
+		if r.Summary.WarningCount != 1 || r.Warnings[0].Kind != "build-ahead" || r.Warnings[0].ID != "component~ba~1" {
+			t.Errorf("warnings = %+v, want one build-ahead on component~ba~1", r.Warnings)
 		}
 	}
 
@@ -289,6 +291,34 @@ func TestGatePolicy(t *testing.T) {
 		}
 		if r.Summary.ZombieCount != 1 || r.Summary.BrokenCount != 0 {
 			t.Errorf("zombie=%d broken=%d, want 1 and 0 (not a broken anchor)", r.Summary.ZombieCount, r.Summary.BrokenCount)
+		}
+	}
+}
+
+// TestBuildAheadRequiresCode is the regression for #43: a proposed item covered
+// only by other (unbuilt) register items, with NO anchors anywhere, has no code —
+// so it must raise no warning. It is un-built spec, tracked via the planned list
+// and the spec-debt budget, not code "building ahead" of approval. Previously the
+// warning keyed on a bare register coverer and fired with zero code, contradicting
+// the documented meaning of build-ahead.
+func TestBuildAheadRequiresCode(t *testing.T) {
+	items := []register.Item{
+		{ID: "feat~toy~1", Type: "feat", Status: "proposed", Needs: []string{"req"}},
+		{ID: "req~toy~1", Type: "req", Status: "proposed", Covers: []string{"feat~toy~1"}, Needs: []string{"component"}},
+	}
+	r := Build(items, nil, nil, GateOpts{})
+	if !r.Summary.OK {
+		t.Fatalf("no code, all proposed — must not fail; got %+v", r.Summary)
+	}
+	if r.Summary.WarningCount != 0 || len(r.Warnings) != 0 {
+		t.Errorf("warnings = %+v, want none (no code exists, nothing is building ahead)", r.Warnings)
+	}
+	if r.Summary.PlannedItems != 2 {
+		t.Errorf("plannedItems = %d, want 2 (both tracked as planned)", r.Summary.PlannedItems)
+	}
+	for _, p := range r.Planned {
+		if p.Realised {
+			t.Errorf("planned %s realised=true, want false (nothing built)", p.ID)
 		}
 	}
 }

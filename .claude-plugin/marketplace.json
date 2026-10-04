@@ -1,0 +1,31 @@
+{
+  "name": "plumbline",
+  "description": "Plumbline — light-touch, enforced requirement↔code traceability.",
+  "owner": {
+    "name": "Dr. Zog",
+    "email": "me@dr-zog.com"
+  },
+  "plugins": [
+    {
+      "name": "plumbline",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/dr-zog/plumbline.git",
+        "path": "plugins/plumbline",
+        "ref": "dist"
+      },
+      "description": "Light-touch, enforced traceability from requirements to code. Anchors link each code-area up to a documented requirement, feature or C4 component; a zero-dependency Go engine proves they resolve both ways and fails the build when they don't. Skills onboard a codebase, keep the register current, enforce the gate, and generate audience-facing docs.",
+      "homepage": "https://github.com/dr-zog/plumbline",
+      "repository": "https://github.com/dr-zog/plumbline",
+      "license": "MIT",
+      "category": "traceability",
+      "keywords": [
+        "traceability",
+        "requirements",
+        "openfasttrace",
+        "c4",
+        "living-documentation"
+      ]
+    }
+  ]
+}

@@ -5,6 +5,7 @@ package report
 // oft:off — the tag literal below is a test fixture, not a real anchor.
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/dr-zog/plumbline/internal/anchor"
@@ -320,6 +321,156 @@ func TestBuildAheadRequiresCode(t *testing.T) {
 		if p.Realised {
 			t.Errorf("planned %s realised=true, want false (nothing built)", p.ID)
 		}
+	}
+}
+
+// TestBuiltCompleteness checks ADR 009: the advice layer (status-lag, Realised,
+// spec-debt) uses built — every coverer, recursively, built — while the gate keeps
+// by-type deep. The variants are the ones verified in the #44 design analysis.
+func TestBuiltCompleteness(t *testing.T) {
+	// A fully built approved requirement under parent: req → component → impl anchor.
+	builtReq := func(parent string) []register.Item {
+		return []register.Item{
+			{ID: "req~built~1", Type: "req", Status: "approved", Needs: []string{"component"}, Covers: []string{parent}},
+			{ID: "component~built~1", Type: "component", Status: "approved", Needs: []string{"impl"}, Covers: []string{"req~built~1"}},
+		}
+	}
+	unbuiltReq := func(name, status, parent string) register.Item {
+		return register.Item{ID: "req~" + name + "~1", Type: "req", Status: status, Needs: []string{"component"}, Covers: []string{parent}}
+	}
+	builtAnchor := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~built~1"}}
+
+	cases := []struct {
+		name         string
+		items        []register.Item
+		wantOK       bool
+		wantWarnings map[string]string   // id → kind, exact set
+		wantRealised map[string]bool     // planned id → realised
+		wantUnbuilt  map[string][]string // planned id → unbuilt coverers
+	}{
+		{
+			// A — the issue: one built, two unbuilt proposed reqs. Code exists, but the
+			// feature is not fully built: build-ahead, not "promote".
+			name: "A proposed feat, mixed reqs",
+			items: append(append([]register.Item{
+				{ID: "feat~rooms~2", Type: "feat", Status: "proposed", Needs: []string{"req"}},
+			}, builtReq("feat~rooms~2")...),
+				unbuiltReq("unbuilt-a", "proposed", "feat~rooms~2"),
+				unbuiltReq("unbuilt-b", "proposed", "feat~rooms~2")),
+			wantOK:       true,
+			wantWarnings: map[string]string{"feat~rooms~2": "build-ahead"},
+			wantRealised: map[string]bool{"feat~rooms~2": false, "req~unbuilt-a~1": false, "req~unbuilt-b~1": false},
+			wantUnbuilt:  map[string][]string{"feat~rooms~2": {"req~unbuilt-a~1", "req~unbuilt-b~1"}},
+		},
+		{
+			// B — the gate is unchanged: an APPROVED feat with planned unbuilt reqs still
+			// passes strict (by-type deep), so planned coverers never redden main.
+			name: "B approved feat, planned unbuilt reqs — gate unchanged",
+			items: append(append([]register.Item{
+				{ID: "feat~rooms~2", Type: "feat", Status: "approved", Needs: []string{"req"}},
+			}, builtReq("feat~rooms~2")...),
+				unbuiltReq("unbuilt-a", "proposed", "feat~rooms~2")),
+			wantOK:       true,
+			wantWarnings: map[string]string{},
+			wantRealised: map[string]bool{"req~unbuilt-a~1": false},
+		},
+		{
+			// C — an unbuilt APPROVED sibling: previously "promote" while the gate failed
+			// on that sibling. Now build-ahead; the gate still fails, as before.
+			name: "C proposed feat, unbuilt approved sibling",
+			items: append(append([]register.Item{
+				{ID: "feat~rooms~2", Type: "feat", Status: "proposed", Needs: []string{"req"}},
+			}, builtReq("feat~rooms~2")...),
+				unbuiltReq("unbuilt-a", "approved", "feat~rooms~2")),
+			wantOK:       false,
+			wantWarnings: map[string]string{"feat~rooms~2": "build-ahead"},
+			wantRealised: map[string]bool{"feat~rooms~2": false},
+			wantUnbuilt:  map[string][]string{"feat~rooms~2": {"req~unbuilt-a~1"}},
+		},
+		{
+			// D — the same defect one rung down: not a feature-only property.
+			name: "D proposed req, one built + one unbuilt component",
+			items: []register.Item{
+				{ID: "req~d~1", Type: "req", Status: "proposed", Needs: []string{"component"}},
+				{ID: "component~built~1", Type: "component", Status: "approved", Needs: []string{"impl"}, Covers: []string{"req~d~1"}},
+				{ID: "component~unbuilt~1", Type: "component", Status: "proposed", Needs: []string{"impl"}, Covers: []string{"req~d~1"}},
+			},
+			wantOK:       true,
+			wantWarnings: map[string]string{"req~d~1": "build-ahead"},
+			wantRealised: map[string]bool{"req~d~1": false, "component~unbuilt~1": false},
+			wantUnbuilt:  map[string][]string{"req~d~1": {"component~unbuilt~1"}},
+		},
+		{
+			// E — the ADR 007 no-Needs path: a proposed context with one built and one
+			// unbuilt container is not fully built.
+			name: "E proposed no-Needs context, mixed containers",
+			items: []register.Item{
+				{ID: "context~sys~1", Type: "context", Status: "proposed"},
+				{ID: "container~built~1", Type: "container", Status: "approved", Desc: "Go", Needs: []string{"component"}, Covers: []string{"context~sys~1"}},
+				{ID: "component~built~1", Type: "component", Status: "approved", Needs: []string{"impl"}, Covers: []string{"container~built~1"}},
+				{ID: "container~unbuilt~1", Type: "container", Status: "proposed", Desc: "Go", Needs: []string{"component"}, Covers: []string{"context~sys~1"}},
+			},
+			wantOK:       true,
+			wantWarnings: map[string]string{"context~sys~1": "build-ahead"},
+			wantRealised: map[string]bool{"context~sys~1": false, "container~unbuilt~1": false},
+			wantUnbuilt:  map[string][]string{"context~sys~1": {"container~unbuilt~1"}},
+		},
+		{
+			// F — positive control: every coverer built → status-lag, realised.
+			name: "F proposed feat, fully built",
+			items: append([]register.Item{
+				{ID: "feat~rooms~2", Type: "feat", Status: "proposed", Needs: []string{"req"}},
+			}, builtReq("feat~rooms~2")...),
+			wantOK:       true,
+			wantWarnings: map[string]string{"feat~rooms~2": "status-lag"},
+			wantRealised: map[string]bool{"feat~rooms~2": true},
+			wantUnbuilt:  map[string][]string{"feat~rooms~2": nil},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			r := Build(c.items, builtAnchor, []string{"a.go"}, GateOpts{})
+			if r.Summary.OK != c.wantOK {
+				t.Errorf("OK = %v, want %v (summary %+v)", r.Summary.OK, c.wantOK, r.Summary)
+			}
+			got := map[string]string{}
+			for _, w := range r.Warnings {
+				got[w.ID] = w.Kind
+			}
+			if len(got) != len(c.wantWarnings) {
+				t.Errorf("warnings = %v, want %v", got, c.wantWarnings)
+			}
+			for id, kind := range c.wantWarnings {
+				if got[id] != kind {
+					t.Errorf("warning %s = %q, want %q", id, got[id], kind)
+				}
+			}
+			byID := map[string]Planned{}
+			for _, p := range r.Planned {
+				byID[p.ID] = p
+			}
+			for id, want := range c.wantRealised {
+				if p, ok := byID[id]; !ok || p.Realised != want {
+					t.Errorf("planned %s realised = %v (present %v), want %v", id, p.Realised, ok, want)
+				}
+			}
+			for id, want := range c.wantUnbuilt {
+				if g := byID[id].Unbuilt; strings.Join(g, ",") != strings.Join(want, ",") {
+					t.Errorf("planned %s unbuilt = %v, want %v", id, g, want)
+				}
+			}
+			// Invariant: spec-debt is exactly the un-realised planned feat/req items.
+			debt := 0
+			for _, p := range r.Planned {
+				if !p.Realised && (strings.HasPrefix(p.ID, "feat~") || strings.HasPrefix(p.ID, "req~")) {
+					debt++
+				}
+			}
+			if r.Summary.SpecDebtCount != debt {
+				t.Errorf("specDebtCount = %d, want %d (un-realised planned feat/req)", r.Summary.SpecDebtCount, debt)
+			}
+		})
 	}
 }
 

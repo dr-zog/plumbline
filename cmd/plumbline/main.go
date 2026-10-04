@@ -237,7 +237,7 @@ func writeText(w io.Writer, r report.Report) {
 		for _, wn := range r.Warnings {
 			note := "building ahead of approval"
 			if wn.Kind == "status-lag" {
-				note = "fully covered — promote to approved"
+				note = "fully built — promote to approved"
 			}
 			fmt.Fprintf(w, "  [%s · %s] %s%s — %s  (%s:%d)\n", wn.Status, wn.Kind, wn.ID, titleOf(wn.Title), note, wn.File, wn.Line)
 		}
@@ -251,7 +251,11 @@ func writeText(w io.Writer, r report.Report) {
 			if p.Realised {
 				state = "realised"
 			}
-			fmt.Fprintf(w, "  [%s · %s] %s%s  (%s:%d)\n", p.Status, state, p.ID, titleOf(p.Title), p.File, p.Line)
+			unbuilt := ""
+			if len(p.Unbuilt) > 0 {
+				unbuilt = " — unbuilt: " + strings.Join(p.Unbuilt, ", ")
+			}
+			fmt.Fprintf(w, "  [%s · %s] %s%s%s  (%s:%d)\n", p.Status, state, p.ID, titleOf(p.Title), unbuilt, p.File, p.Line)
 		}
 		fmt.Fprintln(w)
 	}

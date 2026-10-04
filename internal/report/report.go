@@ -149,15 +149,16 @@ type Warning struct {
 }
 
 // Planned is a proposed or draft item: tracked and surfaced for the planned-vs-
-// realised view, but never gated. Realised is true when its chain already
-// resolves to code.
+// realised view, but never gated. Realised is true when it is fully built — every
+// coverer, recursively, built (ADR 009); Unbuilt names the coverers that are not.
 type Planned struct {
-	ID       string `json:"id"`
-	Title    string `json:"title,omitempty"`
-	Status   string `json:"status"`
-	Realised bool   `json:"realised"`
-	File     string `json:"file"`
-	Line     int    `json:"line"`
+	ID       string   `json:"id"`
+	Title    string   `json:"title,omitempty"`
+	Status   string   `json:"status"`
+	Realised bool     `json:"realised"`
+	Unbuilt  []string `json:"unbuiltCoverers,omitempty"`
+	File     string   `json:"file"`
+	Line     int      `json:"line"`
 }
 
 // Build cross-checks anchors against register items and scanned source files.
@@ -296,6 +297,48 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 		return res
 	}
 
+	// built is memoised and status-blind: OpenFastTrace's deep-coverage rule (ADR 009).
+	// An item is built iff it is shallow-covered and EVERY item that Covers it is itself
+	// built — anchors are built leaves. Unlike deep (∃ one deep coverer per needed type,
+	// which the gate keeps so a planned coverer never fails an approved parent), built
+	// sees every coverer, so an unbuilt sibling keeps its parent un-built. A no-Needs
+	// top-of-axis node needs at least one coverer, all built — never vacuous (ADR 007).
+	// It feeds the advice layer only: status-lag, Realised and spec-debt. built implies
+	// deep (and hasCode), so it can only make those signals more conservative.
+	builtMemo := make(map[string]bool)
+	builtVisiting := make(map[string]bool)
+	var built func(it register.Item) bool
+	built = func(it register.Item) bool {
+		if v, ok := builtMemo[it.ID]; ok {
+			return v
+		}
+		if builtVisiting[it.ID] {
+			return false // defensive: the ladder is acyclic, but never loop
+		}
+		builtVisiting[it.ID] = true
+		res := true
+		for _, need := range it.Needs {
+			if !needMetShallow(it.ID, need) {
+				res = false
+				break
+			}
+		}
+		if res && len(it.Needs) == 0 && len(coverers[it.ID]) == 0 {
+			res = false // nothing realises it: never vacuously built (ADR 007)
+		}
+		if res {
+			for _, y := range coverers[it.ID] {
+				if !built(y) {
+					res = false
+					break
+				}
+			}
+		}
+		builtVisiting[it.ID] = false
+		builtMemo[it.ID] = res
+		return res
+	}
+
 	var uncovered []Uncovered
 	var transitive []TransitiveGap
 	var deadEnds []DeadEnd
@@ -313,28 +356,30 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 		}
 		isShallow := len(missing) == 0
 		isDeep := isShallow && deep(it)
+		isBuilt := built(it) // advice-layer completeness: every coverer built (ADR 009)
 
 		// Spec-debt budget is measured over the requirements/features axis only:
-		// a not-yet-approved feat/req that isn't fully realised is un-built spec.
+		// a not-yet-approved feat/req that isn't fully built is un-built spec.
 		if it.Type == "feat" || it.Type == "req" {
 			specTotal++
-			if it.Planned() && !isDeep {
+			if it.Planned() && !isBuilt {
 				specDebtCount++
 			}
 		}
 
 		// Proposed/draft: tracked, never gated. Real code (an anchor in its coverage
 		// subtree) against one is a warning — building ahead of approval (status-lag
-		// once fully covered) — not a gap. A bare register coverer with no code
+		// once fully built) — not a gap. A bare register coverer with no code
 		// beneath it is not "building ahead"; it is just un-built spec (#43).
 		if it.Planned() {
 			planned = append(planned, Planned{
 				ID: it.ID, Title: it.Title, Status: it.StatusOrDefault(),
-				Realised: isDeep, File: it.File, Line: it.Line,
+				Realised: isBuilt, Unbuilt: unbuiltCoverers(it, coverers, built),
+				File: it.File, Line: it.Line,
 			})
 			if hasCode(it.ID) {
 				kind := "build-ahead"
-				if isDeep {
+				if isBuilt {
 					kind = "status-lag" // fully built but unapproved → promote to approved
 				}
 				warnings = append(warnings, Warning{
@@ -472,6 +517,20 @@ func needMetDeep(id, need string, anchorTypes map[string]map[string]bool,
 		}
 	}
 	return false
+}
+
+// unbuiltCoverers lists the covering items of it that are not themselves built — the
+// advice layer's counterpart to weakCoverers, naming what still stands between a
+// planned item and "fully built" (ADR 009).
+func unbuiltCoverers(it register.Item, coverers map[string][]register.Item, built func(register.Item) bool) []string {
+	var out []string
+	for _, y := range coverers[it.ID] {
+		if !built(y) {
+			out = append(out, y.ID)
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 // weakCoverers lists the covering items of it that are not themselves deep.

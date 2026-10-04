@@ -192,12 +192,13 @@ Covers: feat~bidirectional-audit~1
 Needs: component
 
 ### Warn on build-ahead, fail on zombie code
-`req~status-gate-policy~1`
+`req~status-gate-policy~2`
 Status: approved
 
-Surface a not-yet-approved (`proposed`/`draft`) item that has coverage as a **warning** —
-build-ahead, or status-lag when fully covered — without failing the gate; and flag code that
-anchors a `rejected` item as **zombie code**, a hard fail distinct from a broken anchor.
+Surface a not-yet-approved (`proposed`/`draft`) item that has **real code** beneath it as a
+**warning** — build-ahead, or status-lag once it is **fully built** (every coverer, recursively,
+built — ADR 009), naming any coverers still unbuilt — without failing the gate; and flag code
+that anchors a `rejected` item as **zombie code**, a hard fail distinct from a broken anchor.
 
 Covers: feat~requirement-lifecycle~1
 Needs: component
@@ -206,7 +207,7 @@ Needs: component
 `req~spec-debt-budget~1`
 Status: approved
 
-Score the un-built spec — not-yet-approved, un-realised `feat`/`req` items — as a count and a
+Score the un-built spec — not-yet-approved `feat`/`req` items not yet fully built (ADR 009) — as a count and a
 ratio, and gate against an optional budget (`maxProposed` count, `maxProposedPct` ratio) so a
 project can bound how much of its requirements spec runs ahead of the code.
 

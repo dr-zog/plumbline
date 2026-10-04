@@ -47,3 +47,4 @@ Sources and evidence behind the decision, so it can be re-checked.
 - [006 — GitHub Release binaries for pinned consumption](006-release-binaries-for-ci.md)
 - [007 — Coverage-aware dead-ends; the architecture axis is first-class](007-coverage-aware-dead-ends.md)
 - [008 — Orphan-detection granularity is the directory](008-orphan-detection-granularity.md)
+- [009 — Two completeness notions: a by-type gate, an all-coverers advice layer](009-two-completeness-notions.md)

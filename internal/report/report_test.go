@@ -474,6 +474,90 @@ func TestBuiltCompleteness(t *testing.T) {
 	}
 }
 
+// TestApprovedCoverersMustBeDeep pins ADR 010 (#48): the gate's deep coverage
+// also requires every approved coverer to be deep, while planned coverers are
+// ignored. No verdict changes — only the scorecard stops overstating.
+func TestApprovedCoverersMustBeDeep(t *testing.T) {
+	builtAnchor := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~built~1"}}
+	cases := []struct {
+		name     string
+		items    []register.Item
+		wantOK   bool
+		wantDeep int
+		wantPct  float64
+		wantWeak map[string][]string // transitive id → weak coverers, exact set
+	}{
+		{
+			// The #48 repro: one built and one uncovered approved req. Previously 75%
+			// with no transitive defect; the feature now names its weak link.
+			name: "uncovered approved sibling",
+			items: []register.Item{
+				{ID: "feat~f~1", Type: "feat", Status: "approved", Needs: []string{"req"}},
+				{ID: "req~built~1", Type: "req", Status: "approved", Needs: []string{"component"}, Covers: []string{"feat~f~1"}},
+				{ID: "component~built~1", Type: "component", Status: "approved", Needs: []string{"impl"}, Covers: []string{"req~built~1"}},
+				{ID: "req~gap~1", Type: "req", Status: "approved", Needs: []string{"component"}, Covers: []string{"feat~f~1"}},
+			},
+			wantOK:   false, // req~gap~1 is uncovered — failing before and after
+			wantDeep: 2,
+			wantPct:  50.0,
+			wantWeak: map[string][]string{"feat~f~1": {"req~gap~1"}},
+		},
+		{
+			// ADR 007 no-Needs path: an approved context over one built and one
+			// unbuilt approved container is not deep either.
+			name: "no-Needs context, unbuilt approved container",
+			items: []register.Item{
+				{ID: "context~sys~1", Type: "context", Status: "approved"},
+				{ID: "container~built~1", Type: "container", Status: "approved", Desc: "Go", Needs: []string{"component"}, Covers: []string{"context~sys~1"}},
+				{ID: "component~built~1", Type: "component", Status: "approved", Needs: []string{"impl"}, Covers: []string{"container~built~1"}},
+				{ID: "container~gap~1", Type: "container", Status: "approved", Desc: "Go", Needs: []string{"component"}, Covers: []string{"context~sys~1"}},
+			},
+			wantOK:   false,
+			wantDeep: 2,
+			wantPct:  50.0,
+			wantWeak: map[string][]string{"context~sys~1": {"container~gap~1"}},
+		},
+		{
+			// Planned coverers are ignored: an approved feature over a built req and
+			// an unbuilt proposed req stays deep and green.
+			name: "unbuilt planned sibling ignored",
+			items: []register.Item{
+				{ID: "feat~f~1", Type: "feat", Status: "approved", Needs: []string{"req"}},
+				{ID: "req~built~1", Type: "req", Status: "approved", Needs: []string{"component"}, Covers: []string{"feat~f~1"}},
+				{ID: "component~built~1", Type: "component", Status: "approved", Needs: []string{"impl"}, Covers: []string{"req~built~1"}},
+				{ID: "req~later~1", Type: "req", Status: "proposed", Needs: []string{"component"}, Covers: []string{"feat~f~1"}},
+			},
+			wantOK:   true,
+			wantDeep: 3,
+			wantPct:  100.0,
+			wantWeak: map[string][]string{},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			r := Build(c.items, builtAnchor, []string{"a.go"}, GateOpts{})
+			if r.Summary.OK != c.wantOK {
+				t.Errorf("OK = %v, want %v (summary %+v)", r.Summary.OK, c.wantOK, r.Summary)
+			}
+			if r.Summary.DeepCovered != c.wantDeep || r.Summary.CompletenessPct != c.wantPct {
+				t.Errorf("deep = %d (%.1f%%), want %d (%.1f%%)", r.Summary.DeepCovered, r.Summary.CompletenessPct, c.wantDeep, c.wantPct)
+			}
+			got := map[string][]string{}
+			for _, g := range r.Transitive {
+				got[g.ID] = g.Weak
+			}
+			if len(got) != len(c.wantWeak) {
+				t.Errorf("transitive = %v, want %v", got, c.wantWeak)
+			}
+			for id, want := range c.wantWeak {
+				if strings.Join(got[id], ",") != strings.Join(want, ",") {
+					t.Errorf("transitive %s weak = %v, want %v", id, got[id], want)
+				}
+			}
+		})
+	}
+}
+
 // TestSpecDebtBudget checks the spec-debt count/ratio over the feat/req axis and
 // the optional budget gate (count and percentage).
 func TestSpecDebtBudget(t *testing.T) {

@@ -227,7 +227,10 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 	}
 
 	// deep is memoised: an item is deep iff every Need is met by an anchor, or
-	// by a covering item that is itself deep.
+	// by a covering item that is itself deep — and every APPROVED coverer is itself
+	// deep. An approved coverer is a commitment, so an unbuilt one means the chain
+	// does not resolve; planned coverers are ignored, so un-built spec never fails
+	// an approved parent (ADR 010).
 	memo := make(map[string]bool)
 	visiting := make(map[string]bool)
 	var deep func(it register.Item) bool
@@ -254,6 +257,14 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 			res = true
 			for _, need := range it.Needs {
 				if !needMetDeep(it.ID, need, anchorTypes, coverers, deep) {
+					res = false
+					break
+				}
+			}
+		}
+		if res {
+			for _, y := range coverers[it.ID] {
+				if y.Approved() && !deep(y) {
 					res = false
 					break
 				}

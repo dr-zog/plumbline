@@ -426,7 +426,7 @@ func Build(items []register.Item, anchors []anchor.Anchor, scannedFiles []string
 		case !isDeep:
 			transitive = append(transitive, TransitiveGap{
 				ID: it.ID, Title: it.Title,
-				Weak: weakCoverers(it, coverers, deep),
+				Weak: weakCoverers(it, anchorTypes, coverers, deep),
 				File: it.File, Line: it.Line,
 			})
 		}
@@ -544,11 +544,33 @@ func unbuiltCoverers(it register.Item, coverers map[string][]register.Item, buil
 	return out
 }
 
-// weakCoverers lists the covering items of it that are not themselves deep.
-func weakCoverers(it register.Item, coverers map[string][]register.Item, deep func(register.Item) bool) []string {
+// weakCoverers lists the covering items of it that stand between it and deep — the
+// ones whose fixing would help. An approved coverer that is not deep always counts
+// (ADR 010). A planned one counts only when it is the reason a need fails: its type
+// is a need nothing deep meets, or, for a no-Needs item, no coverer is deep. Planned
+// coverers the gate ignores are never named, so the advice never pushes to build
+// unapproved spec. Every transitive defect names at least one coverer.
+func weakCoverers(it register.Item, anchorTypes map[string]map[string]bool,
+	coverers map[string][]register.Item, deep func(register.Item) bool) []string {
+	unmet := map[string]bool{}
+	for _, need := range it.Needs {
+		if !needMetDeep(it.ID, need, anchorTypes, coverers, deep) {
+			unmet[need] = true
+		}
+	}
+	noDeepCoverer := true
+	for _, y := range coverers[it.ID] {
+		if deep(y) {
+			noDeepCoverer = false
+			break
+		}
+	}
 	var out []string
 	for _, y := range coverers[it.ID] {
-		if !deep(y) {
+		if deep(y) {
+			continue
+		}
+		if y.Approved() || unmet[y.Type] || (len(it.Needs) == 0 && noDeepCoverer) {
 			out = append(out, y.ID)
 		}
 	}

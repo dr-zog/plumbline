@@ -558,6 +558,80 @@ func TestApprovedCoverersMustBeDeep(t *testing.T) {
 	}
 }
 
+// TestWeakCoverersNameOnlyWhatHelps pins #51: a transitive defect names the
+// coverers whose fixing would clear it — approved non-deep ones, and planned ones
+// only where they are why a need fails — never planned siblings the gate ignores.
+func TestWeakCoverersNameOnlyWhatHelps(t *testing.T) {
+	builtAnchor := []anchor.Anchor{{File: "a.go", Line: 1, Covering: "impl", TargetID: "component~built~1"}}
+	builtReq := []register.Item{
+		{ID: "req~built~1", Type: "req", Status: "approved", Needs: []string{"component"}, Covers: []string{"feat~f~1"}},
+		{ID: "component~built~1", Type: "component", Status: "approved", Needs: []string{"impl"}, Covers: []string{"req~built~1"}},
+	}
+	feat := register.Item{ID: "feat~f~1", Type: "feat", Status: "approved", Needs: []string{"req"}}
+	req := func(name, status string) register.Item {
+		return register.Item{ID: "req~" + name + "~1", Type: "req", Status: status, Needs: []string{"component"}, Covers: []string{"feat~f~1"}}
+	}
+	cases := []struct {
+		name  string
+		items []register.Item
+		want  []string
+	}{
+		{
+			// The issue: the proposed sibling is ignored by the gate, so not named.
+			name:  "approved gap with a planned sibling",
+			items: append([]register.Item{feat, req("gap", "approved"), req("later", "proposed")}, builtReq...),
+			want:  []string{"req~gap~1"},
+		},
+		{
+			// The planned req is the only thing meeting the need — it is the weak link.
+			name:  "sole planned coverer",
+			items: []register.Item{feat, req("later", "proposed")},
+			want:  []string{"req~later~1"},
+		},
+		{
+			// No-Needs path with no deep coverer: every non-deep coverer is named.
+			name: "no-Needs context, nothing deep",
+			items: []register.Item{
+				{ID: "context~sys~1", Type: "context", Status: "approved"},
+				{ID: "container~gap~1", Type: "container", Status: "approved", Desc: "Go", Needs: []string{"component"}, Covers: []string{"context~sys~1"}},
+				{ID: "container~later~1", Type: "container", Status: "proposed", Desc: "Go", Needs: []string{"component"}, Covers: []string{"context~sys~1"}},
+			},
+			want: []string{"container~gap~1", "container~later~1"},
+		},
+		{
+			// No-Needs path with a deep coverer: only the approved gap is named.
+			name: "no-Needs context, one deep container",
+			items: []register.Item{
+				{ID: "context~sys~1", Type: "context", Status: "approved"},
+				{ID: "container~built~1", Type: "container", Status: "approved", Desc: "Go", Needs: []string{"component"}, Covers: []string{"context~sys~1"}},
+				{ID: "component~built~1", Type: "component", Status: "approved", Needs: []string{"impl"}, Covers: []string{"container~built~1"}},
+				{ID: "container~gap~1", Type: "container", Status: "approved", Desc: "Go", Needs: []string{"component"}, Covers: []string{"context~sys~1"}},
+				{ID: "container~later~1", Type: "container", Status: "proposed", Desc: "Go", Needs: []string{"component"}, Covers: []string{"context~sys~1"}},
+			},
+			want: []string{"container~gap~1"},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			r := Build(c.items, builtAnchor, []string{"a.go"}, GateOpts{})
+			top := c.items[0].ID
+			var got []string
+			found := false
+			for _, g := range r.Transitive {
+				if g.ID == top {
+					got, found = g.Weak, true
+				}
+			}
+			if !found {
+				t.Fatalf("%s not a transitive defect: %+v", top, r.Transitive)
+			}
+			if strings.Join(got, ",") != strings.Join(c.want, ",") {
+				t.Errorf("weak = %v, want %v", got, c.want)
+			}
+		})
+	}
+}
+
 // TestSpecDebtBudget checks the spec-debt count/ratio over the feat/req axis and
 // the optional budget gate (count and percentage).
 func TestSpecDebtBudget(t *testing.T) {

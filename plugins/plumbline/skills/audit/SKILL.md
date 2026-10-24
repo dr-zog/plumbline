@@ -74,8 +74,9 @@ to `onboard` and `maintain`.
      yet.
    - **Transitive defects** (`transitiveDefects`) — an item whose *direct* needs
      are met, but a coverer further down the chain isn't itself covered
-     (`weakCoverers` names them). Coverage looks fine one level up; the hole is
-     deeper.
+     (`weakCoverers` names the ones to fix: every approved coverer that isn't deep,
+     and a planned one only when it's the reason a need fails — so it never asks you
+     to build unapproved spec). Coverage looks fine one level up; the hole is deeper.
    - **Orphan code-areas** (`orphans`) — **directories** of scanned source with no
      anchor. Detection is per code-area: one anchor covers its whole directory, so an
      un-anchored file beside an anchored one is *not* an orphan. Coarsely, code whose

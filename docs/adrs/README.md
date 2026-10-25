@@ -49,3 +49,4 @@ Sources and evidence behind the decision, so it can be re-checked.
 - [008 — Orphan-detection granularity is the directory](008-orphan-detection-granularity.md)
 - [009 — Two completeness notions: a by-type gate, an all-coverers advice layer](009-two-completeness-notions.md)
 - [010 — The gate's deep coverage requires every approved coverer to be deep](010-approved-coverers-must-be-deep.md)
+- [011 — Ship the working practice as a forge-neutral template](011-ship-the-working-practice.md)

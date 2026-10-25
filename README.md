@@ -56,7 +56,7 @@ directly. Pin a verified build from a
 [release](https://github.com/dr-zog/plumbline/releases):
 
 ```bash
-base="https://github.com/dr-zog/plumbline/releases/download/v0.3.3"
+base="https://github.com/dr-zog/plumbline/releases/download/v0.3.4"
 curl -sSLO "$base/plumbline-linux-amd64"
 curl -sSLO "$base/SHA256SUMS"
 sha256sum --ignore-missing -c SHA256SUMS          # verify integrity

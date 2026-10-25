@@ -72,6 +72,9 @@ A requirement's `Status` is its maturity, and it moves as the work does (ADR 004
   its `unbuiltCoverers` — something under it isn't built yet, so it isn't ready to promote.
 - **A new requirement in this change** — set its status deliberately: `approved` if it's a
   committed part of what you're shipping, `proposed` if it's designed-ahead and not yet built.
+  The *undesigned* backlog (ideas, requests, outcomes nobody has designed yet) belongs in the
+  issue tracker, not here. `proposed` is for a design settled ahead of building, and the
+  spec-debt budget caps how much of that a repo carries.
 - **Dropping a requirement** — set it `rejected` (and remove its anchored code, or the engine
   reports **zombie code**). Don't silently delete it; the rejection is part of the record.
   **Record *why* in its description** — what superseded it, or why it went — because

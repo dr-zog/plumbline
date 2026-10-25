@@ -10,7 +10,8 @@ For any change that adds or alters a *feature*, the register requirement goes in
 **first**, and the code makes it green **before merge**:
 
 1. **Register the requirement first** — add/adjust the `feat`/`req`/`component`
-   items in `register/`. Run `plumbline`; the new item is **uncovered** and the
+   items in `register/` **with `Status: approved`** (or promote the existing `proposed`
+   item if it was designed ahead). Run `plumbline`; the new item is **uncovered** and the
    gate is **red**. That red is correct — it's the promise, not yet kept.
 2. **Implement**, then **anchor** the code-area(s) that satisfy it.
 3. **Go green** — `plumbline` reports 0 gaps before you open the PR.
@@ -20,9 +21,11 @@ must always mean a real regression, never "work in progress" — that's what kee
 gate trustworthy. (For a *trivial* change — a typo, a doc tweak, a one-line fix with
 no new requirement — registering "first" is ceremony; just keep the trace green.)
 
-The "decided but not yet started" backlog lives in **GitHub Issues** and in `docs/adrs/`,
-**not** as persistent red in the register. A requirement enters the register when its
-work *starts*.
+The *undesigned* backlog lives in **GitHub Issues** (and decisions in `docs/adrs/`), not in
+the register. Designed-ahead work may sit in the register as `proposed`: tracked, not gated per
+item, and capped by the spec-debt budget ([ADR 004](../adrs/004-requirement-status-lifecycle.md)).
+What must never sit there is **persistent red**: an `approved` requirement enters when its
+work *starts*, and is green by merge.
 
 ## The loop
 

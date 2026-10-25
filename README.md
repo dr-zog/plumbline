@@ -30,7 +30,7 @@ register current.
 > **Status: usable and self-hosted.** The engine resolves coverage across the full
 > requirement→architecture→code chain, validates C4 structure, scores coverage and
 > completeness, and gates strictly or by threshold. The Claude Code plugin ships the
-> `onboard` / `maintain` / `enforce` / `audit` / `showcase` skills — and Plumbline
+> `onboard` / `maintain` / `enforce` / `audit` / `showcase` / `process` skills — and Plumbline
 > traces itself (100%). See [`DESIGN.md`](DESIGN.md) for the design rationale.
 
 ## Install
@@ -46,7 +46,7 @@ toolchain, no runtime dependencies:
 /plugin install plumbline@plumbline
 ```
 
-The `onboard` / `maintain` / `enforce` / `audit` / `showcase` skills become available,
+The `onboard` / `maintain` / `enforce` / `audit` / `showcase` / `process` skills become available,
 and the engine runs via the launcher, `${CLAUDE_PLUGIN_ROOT}/bin/plumbline`.
 
 ### In CI (no plugin, no Go toolchain)

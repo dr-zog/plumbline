@@ -12,6 +12,9 @@ Everything green on the branch:
 - Commits are clean and logically grouped; each message says *what* and *why*, not a
   changelog of files. End every commit message with the `Co-Authored-By` trailer.
 - Rebased on the latest `main` so the merge is a clean fast-forward.
+- Changed the *method* in `docs/processes/`? Update the shipped template
+  (`plugins/plumbline/skills/process/references/template/`) in the same PR, or ticket it
+  ([ADR 011](../adrs/011-ship-the-working-practice.md)).
 
 **No manual changelog.** Since [ADR 005](../adrs/005-automated-releases-semantic-release.md)
 the changelog is generated at release by semantic-release from the merged commits, so

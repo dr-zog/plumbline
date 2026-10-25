@@ -46,3 +46,13 @@ Renders the register into glossy, human-facing HTML collateral (two-pager, white
 
 Covers: container~plugin~1, req~showcasing~1
 Needs: impl
+
+### Process skill
+`component~process-skill~1`
+Status: approved
+
+Writes the forge-neutral working-practice template, adapted to the repo, plus optional
+thin agent pointers.
+
+Covers: container~plugin~1, req~process-template~1
+Needs: impl

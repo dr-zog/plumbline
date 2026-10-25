@@ -8,6 +8,14 @@ triggers at the right moment and defers here for the detail.
 Product skills live in `plugins/plumbline/skills/` and ship to users. Dev-process
 skills live in `.claude/skills/` and never leave the repo. Don't cross the streams.
 
+**The method also ships, as a template** ([ADR 011](../adrs/011-ship-the-working-practice.md)).
+The `process` skill writes a forge-neutral version into consumers' repos, from
+`plugins/plumbline/skills/process/references/template/`. These docs stay Plumbline's: the
+GitHub instance, plus Plumbline-only rules. **Keep them in step:** a change to the *method*
+here (register-first, red-branch policy, tickets, status use, ADRs) updates the template in the
+same PR, or files a ticket to. Plumbline-only rules (semantic-release, `shipped-type`, the
+`plugins/` release rule) stay here.
+
 Processes evolve — edit these freely; they're not ADRs. (A settled, provenance-worthy
 *decision* goes in `docs/adrs/`; a *practice* lives here.)
 

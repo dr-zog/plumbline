@@ -136,6 +136,18 @@ Run the engine and narrate a prioritised scorecard.
 Covers: feat~skills-workflow~1
 Needs: component
 
+### Set up the working practice
+`req~process-template~1`
+Status: approved
+
+Write the working practice that keeps the gate meaningful (register-first, never a red
+default branch, tickets as outcomes, ADRs for decisions) into a repo as docs it owns,
+in its forge's terms (GitHub or GitLab) with its own checks. Optional conventions are
+offered, not imposed; existing files are never overwritten (ADR 011).
+
+Covers: feat~skills-workflow~1
+Needs: component
+
 ### Render audience-facing docs
 `req~showcasing~1`
 Status: approved

@@ -104,6 +104,9 @@ Match the anchor's covering type to what the code is: `impl` for implementation,
    one.
 3. Suggest `enforce` if they want the discipline gated from here on, and `maintain`
    as the way to keep it current as the code changes.
+4. Offer `process` to write down a way of working that keeps the gate meaningful:
+   register-first changes, never a red default branch, and tickets as outcomes. It's
+   written in their forge's terms (GitHub or GitLab) as docs they own.
 
 ## What onboarding is not
 

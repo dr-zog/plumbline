@@ -4,6 +4,7 @@
   "exclude": [
     "plugins/plumbline/skills/onboard/references",
     "plugins/plumbline/skills/enforce/references",
-    "plugins/plumbline/skills/showcase/references"
+    "plugins/plumbline/skills/showcase/references",
+    "plugins/plumbline/skills/process/references"
   ]
 }

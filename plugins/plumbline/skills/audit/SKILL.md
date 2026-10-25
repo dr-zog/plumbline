@@ -21,7 +21,7 @@ to `onboard` and `maintain`.
 
 2. **Find the register.** Default `register.md` at the repo root; pass
    `-register <path>` if it lives elsewhere. If there is no register at all, the
-   repo hasn't been onboarded — say so and point at `onboard` (a later skill).
+   repo hasn't been onboarded — say so and point at `onboard`.
 
 3. **Run for JSON:**
    ```

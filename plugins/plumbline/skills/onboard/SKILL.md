@@ -54,6 +54,9 @@ conversation.
    where they don't, infer candidates from the code but **lean hard on the developer
    to confirm** — a requirement is a statement about intended outcomes, which only
    they can ratify. It's fine to start sparse and let `maintain` grow this over time.
+   Register what's built or designed. Leave the *undesigned* backlog in the issue tracker
+   rather than transcribing tickets as `proposed` placeholders: `proposed` means a design
+   settled ahead of building, capped by the spec-debt budget.
    **Mark the requirements you and the developer commit to `Status: approved`** — a bare
    item defaults to `proposed` (provisional, *not* gated), so an un-approved requirement is
    tracked but won't be enforced until it's approved (ADR 004).

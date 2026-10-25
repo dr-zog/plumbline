@@ -5,7 +5,7 @@ Where Plumbline's work is captured, and how much a ticket carries.
 ## Where
 
 **GitHub Issues** — on the `github.com/dr-zog/plumbline` repo. GitHub is the backlog: the
-"decided but not yet started" list.
+"wanted but not yet designed or started" list.
 
 ## What a ticket carries
 
@@ -28,8 +28,13 @@ A good ticket has:
 A ticket is a *candidate* requirement. When work **starts**, it becomes a real
 `req~…`/`feat~…` in `register/` (register-first — see
 [working-on-a-ticket.md](working-on-a-ticket.md)), and the ticket references that ID.
-The backlog lives in GitHub Issues; the *active, code-backed* requirements live in the register.
-Don't pre-populate the register with unstarted tickets — that's what GitHub Issues are for.
+The *undesigned* backlog lives in GitHub Issues: don't transcribe tickets into the register
+as placeholders. The one exception is **designed-ahead** work. Once a design is settled ahead
+of building, it may enter the register as `Status: proposed`. That item is never gated on its
+own: it can't go red for being unbuilt. It does count toward the spec-debt budget, which, if
+configured, fails the gate once un-built spec exceeds it
+([ADR 004](../adrs/004-requirement-status-lifecycle.md)). Everything else enters when its work
+starts.
 
 ## Granularity
 

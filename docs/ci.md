@@ -16,7 +16,7 @@ binaries and a `SHA256SUMS`, so CI can fetch an exact, reproducible build and ve
 before running ([ADR 006](adrs/006-release-binaries-for-ci.md)):
 
 ```bash
-V=v0.2.1
+V=v0.3.2
 base="https://github.com/dr-zog/plumbline/releases/download/$V"
 curl -sSLO "$base/plumbline-linux-amd64"
 curl -sSLO "$base/SHA256SUMS"
@@ -60,7 +60,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Fetch the Plumbline engine
         env:
-          V: v0.2.1
+          V: v0.3.2
         run: |
           base="https://github.com/dr-zog/plumbline/releases/download/$V"
           curl -sSLO "$base/plumbline-linux-amd64"
@@ -78,7 +78,7 @@ plumbline:
   stage: test
   image: alpine:latest      # any base with curl + coreutils
   variables:
-    V: v0.2.1
+    V: v0.3.2
   script:
     - base="https://github.com/dr-zog/plumbline/releases/download/$V"
     - wget -q "$base/plumbline-linux-amd64" "$base/SHA256SUMS"
@@ -93,7 +93,7 @@ plumbline:
   The `dist` branch serves the current build at a fixed path:
   `https://raw.githubusercontent.com/dr-zog/plumbline/dist/plugins/plumbline/bin/plumbline-linux-amd64`
 - **From source.** Zero dependencies, so a tagged build needs only the Go toolchain:
-  `go install github.com/dr-zog/plumbline/cmd/plumbline@v0.2.1` (note: `-version` prints
+  `go install github.com/dr-zog/plumbline/cmd/plumbline@v0.3.2` (note: `-version` prints
   `dev` this way, since the linker stamp isn't applied — irrelevant for running the gate).
 - **Vendored.** Commit a pinned binary into the consuming repo (e.g. under `tools/`) and
   call it directly — hermetic, no download step.

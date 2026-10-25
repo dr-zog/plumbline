@@ -166,6 +166,18 @@ host, with no macOS host or `lipo`.
 Covers: feat~cross-platform-distribution~1
 Needs: component
 
+### Pin consumers to the matching release
+`req~matching-release-pins~1`
+Status: approved
+
+Every CI recipe pins a release tag, never a moving target, and that tag tracks the
+plugin: the shipped snippets take the installed plugin's own version at install time,
+and the human-facing docs are rewritten to the new tag at each release, with a guard
+that fails a pin left stale.
+
+Covers: feat~cross-platform-distribution~1
+Needs: component
+
 ### Honour requirement status
 `req~status-lifecycle~1`
 Status: approved

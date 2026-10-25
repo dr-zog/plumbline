@@ -13,14 +13,14 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "sed -i 's/\"version\": \"[^\"]*\"/\"version\": \"${nextRelease.version}\"/' plugins/plumbline/.claude-plugin/plugin.json",
+        "prepareCmd": "sed -i 's/\"version\": \"[^\"]*\"/\"version\": \"${nextRelease.version}\"/' plugins/plumbline/.claude-plugin/plugin.json && tools/pins/pins.sh write ${nextRelease.version}",
         "publishCmd": "make dist VERSION=v${nextRelease.version} && make checksums"
       }
     ],
     [
       "@semantic-release/git",
       {
-        "assets": ["CHANGELOG.md", "plugins/plumbline/.claude-plugin/plugin.json"],
+        "assets": ["CHANGELOG.md", "plugins/plumbline/.claude-plugin/plugin.json", "README.md", "docs/ci.md"],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ],

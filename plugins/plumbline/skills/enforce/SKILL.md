@@ -72,6 +72,14 @@ plugin, not the project, so the CI job must obtain it. Prefer a **pinned release
 binary or building from source are alternatives when the team prefers them. Whichever you
 pick, pin a version and say plainly which you chose.
 
+**Bake in the version.** The snippets pin `__PLUMBLINE_VERSION__`, not a literal tag, so
+CI never lags the plugin. Substitute the release tag of the plugin you're running — `v`
+plus the `"version"` in `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` (just read the
+file; from the engine's source tree it's `plugins/plumbline/.claude-plugin/plugin.json`) —
+before writing the job, e.g. `sed "s|__PLUMBLINE_VERSION__|vX.Y.Z|"` with the real numbers.
+CI then gates with exactly the engine whose behaviour these skills describe. Check the
+result: never write the placeholder itself, or a bare `v`, into a CI file.
+
 ## Threshold, if they want a softer gate
 
 By default the gate is strict — any gap fails. If the team wants to adopt gradually,

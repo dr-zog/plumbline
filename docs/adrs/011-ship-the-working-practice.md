@@ -1,6 +1,6 @@
 # 011. Ship the working practice as a forge-neutral template
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-25
 - **Deciders:** Dr. Zog (operator), analysis by Claude
 

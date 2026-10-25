@@ -55,7 +55,7 @@ the diff first.
   and confirm `main` is green (`plumbline`, tests) after the merge.
 - **Releasing is automatic.** If the PR was a `fix` / `feat` / breaking change, merging it
   triggers semantic-release — it tags, cuts the notes-only GitHub Release, updates
-  `CHANGELOG.md` + `plugin.json`, and publishes the `dist` branch
+  `CHANGELOG.md` + `plugin.json` + the doc release pins, and publishes the `dist` branch
   ([ADR 005](../adrs/005-automated-releases-semantic-release.md)). You never tag, run
   `make dist`, or edit the changelog by hand. Binaries never live on `main`
   ([ADR 001](../adrs/001-plugin-packaging-and-distribution.md)).

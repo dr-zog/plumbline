@@ -66,7 +66,8 @@ Needs: impl
 Status: approved
 
 Cross-compiles the engine for every target and fuses the macOS universal binary
-(`Makefile`, `tools/makefat`).
+(`Makefile`, `tools/makefat`), and keeps the docs' release pins on the latest tag
+(`tools/pins`).
 
-Covers: container~engine~1, req~cross-platform-binaries~1
+Covers: container~engine~1, req~cross-platform-binaries~1, req~matching-release-pins~1
 Needs: impl

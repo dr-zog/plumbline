@@ -1,4 +1,5 @@
-# Version-drift guard — `plugin.json`'s version must equal the latest release tag.
+# Version-drift guard — `plugin.json`'s version, and the doc release pins (#53), must
+# equal the latest release tag.
 #
 # The release version is bot-maintained (ADR 005): semantic-release writes
 # `plugin.json`, the tag, and the changelog together from one computed number, so
@@ -32,3 +33,7 @@ jobs:
             echo "::error::plugin.json version ($manifest) != latest release ($tag). The version is bot-maintained (ADR 005) — don't hand-edit it."
             exit 1
           fi
+      - name: Doc release pins match the latest tag (#53)
+        run: |
+          tag=$(git tag --list 'v*' --sort=-v:refname | head -1 | sed 's/^v//')
+          tools/pins/pins.sh check "$tag"

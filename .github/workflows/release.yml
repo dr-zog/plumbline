@@ -1,9 +1,9 @@
 # Automated releases (ADR 005) — release-on-merge via semantic-release.
 #
 # semantic-release reads the Conventional Commits since the last release, computes the
-# semver bump, updates CHANGELOG.md + plugin.json and commits them back to `main`
-# ([skip ci]), tags, cuts a notes-only GitHub Release, and runs `make dist` to publish
-# the binaries to the orphan `dist` branch. Auth is a dedicated GitHub App (a bot
+# semver bump, updates CHANGELOG.md + plugin.json + the doc release pins and commits
+# them back to `main` ([skip ci]), tags, cuts a notes-only GitHub Release, and runs
+# `make dist` to publish the binaries to the orphan `dist` branch. Auth is a dedicated GitHub App (a bot
 # identity, no personal token) that bypasses the `main` and `v*` rulesets.
 #
 # Runs on every push to `main` (a merged PR): a releasable commit lands a real release,

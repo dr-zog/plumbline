@@ -12,7 +12,7 @@ Prefer a **pinned release binary**: every
 binaries and a `SHA256SUMS`, so CI fetches an exact, verifiable build.
 
 ```sh
-V=v0.2.1        # pin to a specific release tag — not a moving target
+V=__PLUMBLINE_VERSION__   # pinned release tag, e.g. vX.Y.Z — enforce fills in the plugin's own
 base="https://github.com/dr-zog/plumbline/releases/download/$V"
 curl -sSLO "$base/plumbline-linux-amd64"
 curl -sSLO "$base/SHA256SUMS"
@@ -20,7 +20,10 @@ sha256sum --ignore-missing -c SHA256SUMS
 chmod +x plumbline-linux-amd64
 ```
 
-Pinning to a tag means a new Plumbline release can't silently change the gate. Other
+`__PLUMBLINE_VERSION__` is a placeholder: substitute the release tag matching the
+installed plugin (`v` + the `version` in its `.claude-plugin/plugin.json`) before writing
+the job, so CI runs the same engine the skills describe. Pinning to a tag means a new
+Plumbline release can't silently change the gate. Other
 platforms: `plumbline-linux-arm64`, `plumbline-darwin-universal`,
 `plumbline-windows-amd64.exe`. Alternatives: **vendored** (commit a pinned binary under
 `tools/` and call it — hermetic, no download) or **from source**
@@ -35,7 +38,7 @@ jobs:
   traceability:
     runs-on: ubuntu-latest
     env:
-      V: v0.2.1
+      V: __PLUMBLINE_VERSION__
     steps:
       - uses: actions/checkout@v4
       - name: Fetch the engine
@@ -56,7 +59,7 @@ plumbline:
   stage: test
   image: alpine:latest        # any base with curl + coreutils
   variables:
-    V: v0.2.1
+    V: __PLUMBLINE_VERSION__
   script:
     - base="https://github.com/dr-zog/plumbline/releases/download/$V"
     - wget -q "$base/plumbline-linux-amd64" "$base/SHA256SUMS"

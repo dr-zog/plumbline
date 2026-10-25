@@ -35,7 +35,7 @@ Status: approved
 
 Installs the developer's chosen pre-commit and/or CI gate.
 
-Covers: container~plugin~1, req~enforcement~1
+Covers: container~plugin~1, req~enforcement~1, req~matching-release-pins~1
 Needs: impl
 
 ### Showcase skill
